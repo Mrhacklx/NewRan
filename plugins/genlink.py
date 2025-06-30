@@ -52,6 +52,7 @@ async def incoming_gen_link(bot, message):
             await bot.send_photo(
                 chat_id=message.chat.id,
                 photo=thumb_id_
+            )
 
 
 
