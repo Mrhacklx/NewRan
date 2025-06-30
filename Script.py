@@ -13,7 +13,7 @@ class script(object):
 
 ⚙️ sɪᴢᴇ : {file_size}
 
-Jᴏɪɴ [Main Channel](https://t.me/+qPXNFurnijk1ZjQ1)</b>""" 
+Jᴏɪɴ [Main Channel](https://t.me/+UPPu45NVQqpjMzI1)</b>""" 
 
 
 
