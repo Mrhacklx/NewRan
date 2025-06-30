@@ -112,7 +112,7 @@ async def start(client, message):
                     InlineKeyboardButton("How To Open Link & Verify", url=VERIFY_TUTORIAL)
                 ]]
                 await message.reply_text(
-                    text="<b>🔐 File access ke liye verify kare. Aapko sirf din mein ek baar verify karna padega — uske baad aaj ke liye koi verification nahi hoga.</b>",
+                    text="<b>🔐 File access ke liye verify kare. \n\nAapko sirf din mein ek baar verify karna padega \nuske baad aaj ke liye koi verification nahi hoga.</b>",
                     protect_content=True,
                     reply_markup=InlineKeyboardMarkup(btn)
                 )
@@ -208,7 +208,7 @@ async def start(client, message):
             InlineKeyboardButton("How To Open Link & Verify", url=VERIFY_TUTORIAL)
         ]]
         await message.reply_text(
-            text="<b>🔐 File access ke liye verify kare. Aapko sirf din mein ek baar verify karna padega — uske baad aaj ke liye koi verification nahi hoga.</b>",
+            text="<b>🔐 File access ke liye verify kare. \n\nAapko sirf din mein ek baar verify karna padega \nUske baad aaj ke liye koi verification nahi hoga.</b>",
             protect_content=True,
             reply_markup=InlineKeyboardMarkup(btn)
         )
