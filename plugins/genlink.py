@@ -1,13 +1,8 @@
-
-import re
-from pyrogram import filters, Client, enums
-from pyrogram.errors.exceptions.bad_request_400 import ChannelInvalid, UsernameInvalid, UsernameNotModified
-from config import ADMINS, LOG_CHANNEL, PUBLIC_FILE_STORE, WEBSITE_URL, WEBSITE_URL_MODE
-from plugins.users_api import get_user, get_short_link
-import re
-import os
-import json
+from pyrogram import Client, filters
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 import base64
+from config import LOG_CHANNEL, WEBSITE_URL_MODE, WEBSITE_URL
+from plugins.users_api import get_user, get_short_link
 
 
 async def allowed(_, __, message):
@@ -16,6 +11,50 @@ async def allowed(_, __, message):
     if message.from_user and message.from_user.id in ADMINS:
         return True
     return False
+
+@Client.on_message((filters.document | filters.video | filters.audio) & filters.private)
+async def incoming_gen_link(bot, message):
+    try:
+        # Get bot username
+        username = (await bot.get_me()).username
+
+        # Copy message to log channel to get file ID
+        post = await message.copy(LOG_CHANNEL)
+        file_id = str(post.id)
+
+        # Encode ID
+        encoded = base64.urlsafe_b64encode(f"file_{file_id}".encode()).decode().rstrip("=")
+
+        # Generate access link
+        if WEBSITE_URL_MODE:
+            share_link = f"{WEBSITE_URL}?Tech_VJ={encoded}"
+        else:
+            share_link = f"https://t.me/{username}?start={encoded}"
+
+        # Get user data and try shortening link
+        user_id = message.from_user.id
+        user = await get_user(user_id)
+        if user and user.get("base_site") and user.get("shortener_api"):
+            short_link = await get_short_link(user, share_link)
+            final_link = short_link
+        else:
+            final_link = share_link
+
+        # Prepare link caption
+        caption = (
+            f"<b>📁 Your File is Ready:</b>\n\n"
+            f"🔗 <a href='{final_link}'>Click Here to Access</a>"
+        )
+
+        # Check for thumbnail in video
+        if message.video and message.video.thumbs:
+            thumb_id = message.video.thumbs[0].file_id
+            await bot.send_photo(
+                chat_id=message.chat.id,
+                photo=thumb_id_
+
+
+
 
 # @Client.on_message((filters.document | filters.video | filters.audio) & filters.private & filters.create(allowed))
 # async def incoming_gen_link(bot, message):
@@ -37,59 +76,6 @@ async def allowed(_, __, message):
 #         await message.reply(f"<b>⭕ ʜᴇʀᴇ ɪs ʏᴏᴜʀ ʟɪɴᴋ:\n\n🖇️ sʜᴏʀᴛ ʟɪɴᴋ :- {short_link}</b>")
 #     else:
 #         await message.reply(f"<b>⭕ ʜᴇʀᴇ ɪs ʏᴏᴜʀ ʟɪɴᴋ:\n\n🔗 ᴏʀɪɢɪɴᴀʟ ʟɪɴᴋ :- {share_link}</b>")
-
-
-
-@Client.on_message((filters.document | filters.video | filters.audio) & filters.private & filters.create(allowed))
-async def incoming_gen_link(bot, message):
-    username = (await bot.get_me()).username
-    file_type = message.media
-    post = await message.copy(LOG_CHANNEL)
-    file_id = str(post.id)
-    string = 'file_' + file_id
-    outstr = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
-    user_id = message.from_user.id
-    user = await get_user(user_id)
-
-    # Prepare link
-    if WEBSITE_URL_MODE:
-        share_link = f"{WEBSITE_URL}?Tech_VJ={outstr}"
-    else:
-        share_link = f"https://t.me/{username}?start={outstr}"
-
-    # Prepare thumbnail (if video and has thumbnail)
-    thumb_id = None
-    if message.video and message.video.thumbs:
-        thumb_id = message.video.thumbs[0].file_id
-
-    caption = (
-        f"<b>⭕ ʜᴇʀᴇ ɪs ʏᴏᴜʀ ʟɪɴᴋ:</b>\n\n"
-        f"🔗 <a href='{share_link}'>Click Here to Open File</a>"
-    )
-
-    if user["base_site"] and user["shortener_api"]:
-        short_link = await get_short_link(user, share_link)
-        caption = (
-            f"<b>⭕ ʜᴇʀᴇ ɪs ʏᴏᴜʀ ʟɪɴᴋ:</b>\n\n"
-            f"🖇️ <a href='{short_link}'>Short Link</a>"
-        )
-
-    # Send preview image with caption
-    if thumb_id:
-        await bot.send_photo(
-            chat_id=message.chat.id,
-            photo=thumb_id,
-            caption=caption,
-            parse_mode="html",
-            protect_content=True
-        )
-    else:
-        # Fallback to text reply if no thumbnail available
-        await message.reply(
-            text=caption,
-            parse_mode="html",
-            protect_content=True
-        )
 
 
 @Client.on_message(filters.command(['link']) & filters.create(allowed))
