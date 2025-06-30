@@ -51,9 +51,22 @@ async def incoming_gen_link(bot, message):
             thumb_id = message.video.thumbs[0].file_id
             await bot.send_photo(
                 chat_id=message.chat.id,
-                photo=thumb_id_
+                photo=thumb_id,
+                caption=caption,
+                parse_mode="html",
+                protect_content=True
+            )
+        else:
+            # Fallback for document/audio or no thumbnail
+            buttons = [[InlineKeyboardButton("📥 Access File", url=final_link)]]
+            await message.reply(
+                text="Your file is ready. Click the button below 👇",
+                reply_markup=InlineKeyboardMarkup(buttons),
+                protect_content=True
             )
 
+    except Exception as e:
+        await message.reply(f"❌ <b>Error:</b> {e}") 
 
 
 
