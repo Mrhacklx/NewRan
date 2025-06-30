@@ -98,6 +98,11 @@ async def start(client, message):
                 reply_markup=InlineKeyboardMarkup(btnn)
             )
             await verify_user(client, userid, token)
+            await asyncio.sleep(60)
+            try:
+                await sent_msg.delete()
+            except:
+                pass
         else:
             return await message.reply_text(
                 text="<b>Invalid link or Expired link !</b>",
