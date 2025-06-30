@@ -45,11 +45,11 @@ async def check_token(bot, userid, token):
     else:
         return False
 
-async def get_token(bot, userid, link):
+async def get_token(bot, userid, link, data):
     user = await bot.get_users(userid)
     token = ''.join(random.choices(string.ascii_letters + string.digits, k=7))
     TOKENS[user.id] = {token: False}
-    link = f"{link}verify-{user.id}-{token}"
+    link = f"{link}verify-{user.id}-{token}-{data}"
     shortened_verify_url = await get_verify_shorted_link(link)
     return str(shortened_verify_url)
 
