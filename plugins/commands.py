@@ -21,8 +21,10 @@ from TechVJ.utils.file_properties import get_name, get_hash, get_media_file_size
 logger = logging.getLogger(__name__)
 
 BATCH_FILES = {}
-CHANNEL_ID = -1002875197831  
-CHANNEL_LINK = "https://t.me/+Kww05UMuKi9jMWY1"
+CHANNEL_ID1 = -1002875197831  
+CHANNEL_ID2 = -1002605760022
+CHANNEL_LINK1 = "https://t.me/+Kww05UMuKi9jMWY1"
+CHANNEL_LINK2 = "https://t.me/+bAkkoqVBJz01NjE1"
 
 def get_size(size):
     """Get size in readable format"""
@@ -226,26 +228,36 @@ async def start(client, message):
 
     pre, decode_file_id = ((base64.urlsafe_b64decode(data + "=" * (-len(data) % 4))).decode("ascii")).split("_", 1)
     try:
-        user = await client.get_chat_member(CHANNEL_ID, message.from_user.id)
-        print(f"User status: {user.status}")  # DEBUG
-        if user.status == "left":
-            raise UserNotParticipant
+        # 🔎 Check if user is in Channel 1
+        user1 = await client.get_chat_member(CHANNEL_ID1, message.from_user.id)
+        if user1.status == "left":
+            raise UserNotParticipant("Not in Channel 1")
+    
+        # 🔎 Check if user is in Channel 2
+        user2 = await client.get_chat_member(CHANNEL_ID2, message.from_user.id)
+        if user2.status == "left":
+            raise UserNotParticipant("Not in Channel 2")
+    
     except UserNotParticipant:
-        print("User not joined channel")  # DEBUG
+        # 🚫 User not in one or both channels — show join prompt
         join_btn = [[
-            InlineKeyboardButton("📢 Join Channel", url=CHANNEL_LINK)
+            InlineKeyboardButton("📢 Join Channel 1", url=CHANNEL_LINK1)
         ],[
-                    InlineKeyboardButton("🔁 I have Joined", callback_data="refresh_verification")
-                ]]
+            InlineKeyboardButton("📢 Join Channel 2", url=CHANNEL_LINK2)
+        ],[
+            InlineKeyboardButton("🔁 I have Joined", callback_data="refresh_verification")
+        ]]
         await message.reply_text(
-            text="🚫 <b>Bot use karne ke liye pehle hamare private channel ko join karein.</b>\n\n🔁 <b>Join karne ke baad /start dobara bhejein.</b>",
+            text="🚫 <b>Bot use karne ke liye pehle dono private channels join karein.</b>\n\n📢 <b>Join karne ke baad /start ya 'I have Joined' dobara click karein.</b>",
             reply_markup=InlineKeyboardMarkup(join_btn),
             disable_web_page_preview=True
         )
         return
+    
     except Exception as e:
-        print(f"Error checking member: {e}")  # Optional debug
-
+        print(f"❌ Channel check error: {e}")
+        await message.reply_text("⚠️ Internal error while checking channel join status.")
+        return
 
     if not await check_verification(client, message.from_user.id) and VERIFY_MODE == True:
         btn = [[
@@ -297,8 +309,22 @@ async def start(client, message):
         return
     except:
         pass
-        
 
+@app.on_callback_query(filters.regex("refresh_verification"))
+async def refresh_join_status(client, callback_query):
+    try:
+        user_id = callback_query.from_user.id
+
+        user1 = await client.get_chat_member(CHANNEL_ID1, user_id)
+        user2 = await client.get_chat_member(CHANNEL_ID2, user_id)
+
+        if user1.status != "left" and user2.status != "left":
+            await callback_query.answer("✅ You have joined both channels. Now click /start again.", show_alert=True)
+        else:
+            await callback_query.answer("🚫 Aapne abhi tak dono channels join nahi kiye.", show_alert=True)
+
+    except Exception as e:
+        await callback_query.answer(f"⚠️ Error: {e}", show_alert=True)
 
 @Client.on_callback_query()
 async def cb_handler(client: Client, query: CallbackQuery):
