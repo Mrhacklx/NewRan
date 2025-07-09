@@ -115,20 +115,34 @@ async def start(client, message):
     elif data.split("-", 1)[0] == "BATCH":
         try:
             try:
-                user = await client.get_chat_member(CHANNEL_ID, message.from_user.id)
-                if user.status == "left":
-                    raise UserNotParticipant
+                # 🔎 Check if user is in Channel 1
+                user1 = await client.get_chat_member(CHANNEL_ID1, message.from_user.id)
+                if user1.status == "left":
+                    raise UserNotParticipant("Not in Channel 1")
+            
+                # 🔎 Check if user is in Channel 2
+                user2 = await client.get_chat_member(CHANNEL_ID2, message.from_user.id)
+                if user2.status == "left":
+                    raise UserNotParticipant("Not in Channel 2")
+            
             except UserNotParticipant:
+                # 🚫 User not in one or both channels — show join prompt
                 join_btn = [[
-                    InlineKeyboardButton("📢 Join Channel", url=CHANNEL_LINK)
+                    InlineKeyboardButton("📢 Join Channel 1", url=CHANNEL_LINK1),
+                    InlineKeyboardButton("📢 Join Channel 2", url=CHANNEL_LINK2)
                 ],[
-                    InlineKeyboardButton("🔁 I have Joined", url="")
+                    InlineKeyboardButton("🔁 I have Joined", url=f"https://telegram.me/{username}?start={data}")
                 ]]
                 await message.reply_text(
-                    text="🚫 <b>Bot use karne ke liye pehle hamare private channel ko join karein.</b>\n\n🔁 <b>Join karne ke baad /start dobara bhejein.</b>",
+                    text="🚫 <b>File ko Pane Ke Liye Channel Ko Join Kare</b>\n\n📢 <b>Join karne ke baad 'I have Joined' dobara click karein.</b>",
                     reply_markup=InlineKeyboardMarkup(join_btn),
                     disable_web_page_preview=True
                 )
+                return
+            
+            except Exception as e:
+                print(f"❌ Channel check error: {e}")
+                await message.reply_text("⚠️ Internal error while checking channel join status.")
                 return
 
             if not await check_verification(client, message.from_user.id) and VERIFY_MODE == True:
@@ -145,6 +159,7 @@ async def start(client, message):
                 return
         except Exception as e:
             return await message.reply_text(f"**Error - {e}**")
+            
         sts = await message.reply("**🔺 ᴘʟᴇᴀsᴇ ᴡᴀɪᴛ**")
         file_id = data.split("-", 1)[1]
         msgs = BATCH_FILES.get(file_id)
