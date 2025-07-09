@@ -375,19 +375,19 @@ async def cb_handler(client: Client, query: CallbackQuery):
 
     elif query.data == "refresh_verification":
         async def refresh_join_status(client, callback_query):
-        try:
-            user_id = callback_query.from_user.id
-    
-            user1 = await client.get_chat_member(CHANNEL_ID1, user_id)
-            user2 = await client.get_chat_member(CHANNEL_ID2, user_id)
-    
-            if user1.status != "left" and user2.status != "left":
-                await callback_query.answer("✅ You have joined both channels. Now click /start again.", show_alert=True)
-            else:
-                await callback_query.answer("🚫 Aapne abhi tak dono channels join nahi kiye.", show_alert=True)
-    
-        except Exception as e:
-            await callback_query.answer(f"⚠️ Error: {e}", show_alert=True)
+            try:
+                user_id = callback_query.from_user.id
+        
+                user1 = await client.get_chat_member(CHANNEL_ID1, user_id)
+                user2 = await client.get_chat_member(CHANNEL_ID2, user_id)
+        
+                if user1.status != "left" and user2.status != "left":
+                    await callback_query.answer("✅ You have joined both channels. Now click /start again.", show_alert=True)
+                else:
+                    await callback_query.answer("🚫 Aapne abhi tak dono channels join nahi kiye.", show_alert=True)
+        
+            except Exception as e:
+                await callback_query.answer(f"⚠️ Error: {e}", show_alert=True)
 
     elif query.data == "help":
         buttons = [[
