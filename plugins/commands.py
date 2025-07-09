@@ -20,7 +20,8 @@ from TechVJ.utils.file_properties import get_name, get_hash, get_media_file_size
 logger = logging.getLogger(__name__)
 
 BATCH_FILES = {}
-
+CHANNEL_ID = -1002875197831  
+CHANNEL_LINK = "https://t.me/+Kww05UMuKi9jMWY1"
 
 def get_size(size):
     """Get size in readable format"""
@@ -110,6 +111,23 @@ async def start(client, message):
             )
     elif data.split("-", 1)[0] == "BATCH":
         try:
+            try:
+                user = await client.get_chat_member(CHANNEL_ID, message.from_user.id)
+                if user.status == "left":
+                    raise UserNotParticipant
+            except UserNotParticipant:
+                join_btn = [[
+                    InlineKeyboardButton("📢 Join Channel", url=CHANNEL_LINK)
+                ],[
+                    InlineKeyboardButton("🔁 I have Joined", callback_data="refresh_verification")
+                ]]
+                await message.reply_text(
+                    text="🚫 <b>Bot use karne ke liye pehle hamare private channel ko join karein.</b>\n\n🔁 <b>Join karne ke baad /start dobara bhejein.</b>",
+                    reply_markup=InlineKeyboardMarkup(join_btn),
+                    disable_web_page_preview=True
+                )
+                return
+
             if not await check_verification(client, message.from_user.id) and VERIFY_MODE == True:
                 btn = [[
                     InlineKeyboardButton("Verify", url=await get_token(client, message.from_user.id, f"https://telegram.me/{username}?start=", data))
@@ -206,6 +224,23 @@ async def start(client, message):
 
 
     pre, decode_file_id = ((base64.urlsafe_b64decode(data + "=" * (-len(data) % 4))).decode("ascii")).split("_", 1)
+    try:
+        user = await client.get_chat_member(CHANNEL_ID, message.from_user.id)
+        if user.status == "left":
+            raise UserNotParticipant
+    except UserNotParticipant:
+        join_btn = [[
+                InlineKeyboardButton("📢 Join Channel", url=CHANNEL_LINK)
+            ],[
+                InlineKeyboardButton("🔁 I have Joined", callback_data="refresh_verification")
+            ]]
+        await message.reply_text(
+                text="🚫 <b>Bot use karne ke liye pehle hamare private channel ko join karein.</b>\n\n🔁 <b>Join karne ke baad /start dobara bhejein.</b>",
+                reply_markup=InlineKeyboardMarkup(join_btn),
+                disable_web_page_preview=True
+            )
+        return
+
     if not await check_verification(client, message.from_user.id) and VERIFY_MODE == True:
         btn = [[
             InlineKeyboardButton("Verify", url=await get_token(client, message.from_user.id, f"https://telegram.me/{username}?start=", data))
