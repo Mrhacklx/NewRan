@@ -226,18 +226,23 @@ async def start(client, message):
     pre, decode_file_id = ((base64.urlsafe_b64decode(data + "=" * (-len(data) % 4))).decode("ascii")).split("_", 1)
     try:
         user = await client.get_chat_member(CHANNEL_ID, message.from_user.id)
+        print(f"User status: {user.status}")  # DEBUG
         if user.status == "left":
             raise UserNotParticipant
     except UserNotParticipant:
+        print("User not joined channel")  # DEBUG
         join_btn = [[
-                InlineKeyboardButton("📢 Join Channel", url=CHANNEL_LINK)
-            ]]
+            InlineKeyboardButton("📢 Join Channel", url=CHANNEL_LINK)
+        ]]
         await message.reply_text(
-                text="🚫 <b>Bot use karne ke liye pehle hamare private channel ko join karein.</b>\n\n🔁 <b>Join karne ke baad /start dobara bhejein.</b>",
-                reply_markup=InlineKeyboardMarkup(join_btn),
-                disable_web_page_preview=True
-            )
+            text="🚫 <b>Bot use karne ke liye pehle hamare private channel ko join karein.</b>\n\n🔁 <b>Join karne ke baad /start dobara bhejein.</b>",
+            reply_markup=InlineKeyboardMarkup(join_btn),
+            disable_web_page_preview=True
+        )
         return
+    except Exception as e:
+        print(f"Error checking member: {e}")  # Optional debug
+
 
     if not await check_verification(client, message.from_user.id) and VERIFY_MODE == True:
         btn = [[
