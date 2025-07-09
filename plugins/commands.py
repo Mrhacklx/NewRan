@@ -122,7 +122,7 @@ async def start(client, message):
                 join_btn = [[
                     InlineKeyboardButton("📢 Join Channel", url=CHANNEL_LINK)
                 ],[
-                    InlineKeyboardButton("🔁 I have Joined", callback_data="refresh_verification")
+                    InlineKeyboardButton("🔁 I have Joined", url="")
                 ]]
                 await message.reply_text(
                     text="🚫 <b>Bot use karne ke liye pehle hamare private channel ko join karein.</b>\n\n🔁 <b>Join karne ke baad /start dobara bhejein.</b>",
@@ -241,14 +241,13 @@ async def start(client, message):
     except UserNotParticipant:
         # 🚫 User not in one or both channels — show join prompt
         join_btn = [[
-            InlineKeyboardButton("📢 Join Channel 1", url=CHANNEL_LINK1)
+            InlineKeyboardButton("📢 Join Channel 1", url=CHANNEL_LINK1),
+            IlineKeyboardButton("📢 Join Channel 2", url=CHANNEL_LINK2)
         ],[
-            InlineKeyboardButton("📢 Join Channel 2", url=CHANNEL_LINK2)
-        ],[
-            InlineKeyboardButton("🔁 I have Joined", callback_data="refresh_verification")
+            InlineKeyboardButton("🔁 I have Joined", url=f"https://telegram.me/{username}?start={data}")
         ]]
         await message.reply_text(
-            text="🚫 <b>Bot use karne ke liye pehle dono private channels join karein.</b>\n\n📢 <b>Join karne ke baad /start ya 'I have Joined' dobara click karein.</b>",
+            text="🚫 <b>File ko Pane Ke Liye Channel Ko Join Kare</b>\n\n📢 <b>Join karne ke baad 'I have Joined' dobara click karein.</b>",
             reply_markup=InlineKeyboardMarkup(join_btn),
             disable_web_page_preview=True
         )
@@ -371,23 +370,6 @@ async def cb_handler(client: Client, query: CallbackQuery):
             reply_markup=reply_markup,
             parse_mode=enums.ParseMode.HTML
         )          
-
-
-    elif query.data == "refresh_verification":
-        async def refresh_join_status(client, callback_query):
-            try:
-                user_id = callback_query.from_user.id
-        
-                user1 = await client.get_chat_member(CHANNEL_ID1, user_id)
-                user2 = await client.get_chat_member(CHANNEL_ID2, user_id)
-        
-                if user1.status != "left" and user2.status != "left":
-                    await callback_query.answer("✅ You have joined both channels. Now click /start again.", show_alert=True)
-                else:
-                    await callback_query.answer("🚫 Aapne abhi tak dono channels join nahi kiye.", show_alert=True)
-        
-            except Exception as e:
-                await callback_query.answer(f"⚠️ Error: {e}", show_alert=True)
 
     elif query.data == "help":
         buttons = [[
