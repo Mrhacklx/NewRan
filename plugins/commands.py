@@ -244,7 +244,7 @@ async def start(client, message):
             InlineKeyboardButton("📢 Join Channel 1", url=CHANNEL_LINK1),
             IlineKeyboardButton("📢 Join Channel 2", url=CHANNEL_LINK2)
         ],[
-            InlineKeyboardButton("🔁 I have Joined", url=f"https://telegram.me/{username}?start={data}")
+            InlineKeyboardButton("🔁 I have Joined", url=f"https://telegram.me/")
         ]]
         await message.reply_text(
             text="🚫 <b>File ko Pane Ke Liye Channel Ko Join Kare</b>\n\n📢 <b>Join karne ke baad 'I have Joined' dobara click karein.</b>",
