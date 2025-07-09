@@ -242,7 +242,7 @@ async def start(client, message):
         # 🚫 User not in one or both channels — show join prompt
         join_btn = [[
             InlineKeyboardButton("📢 Join Channel 1", url=CHANNEL_LINK1),
-            IlineKeyboardButton("📢 Join Channel 2", url=CHANNEL_LINK2)
+            InlineKeyboardButton("📢 Join Channel 2", url=CHANNEL_LINK2)
         ],[
             InlineKeyboardButton("🔁 I have Joined", url=f"https://telegram.me/")
         ]]
