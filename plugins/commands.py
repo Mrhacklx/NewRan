@@ -231,8 +231,6 @@ async def start(client, message):
     except UserNotParticipant:
         join_btn = [[
                 InlineKeyboardButton("📢 Join Channel", url=CHANNEL_LINK)
-            ],[
-                InlineKeyboardButton("🔁 I have Joined", callback_data="refresh_verification")
             ]]
         await message.reply_text(
                 text="🚫 <b>Bot use karne ke liye pehle hamare private channel ko join karein.</b>\n\n🔁 <b>Join karne ke baad /start dobara bhejein.</b>",
