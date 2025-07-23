@@ -2,12 +2,19 @@ import logging, asyncio, os, re, random, pytz, aiohttp, requests, string, json, 
 from datetime import date, datetime
 from config import SHORTLINK_API, SHORTLINK_URL
 from shortzy import Shortzy
+from motor.motor_asyncio import AsyncIOMotorClient
+from config import DB_NAME, DB_URI
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-TOKENS = {}
-VERIFIED = {}
 
+# MongoDB setup
+client = AsyncIOMotorClient(DB_URI)
+db = client['DB_NAME']
+tokens_col = db.tokens  # stores tokens
+verified_col = db.verified  # stores verification dates
+
+# Shortener handler
 async def get_verify_shorted_link(link):
     if SHORTLINK_URL == "api.shareus.io":
         url = f'https://{SHORTLINK_URL}/easy_api'
@@ -24,53 +31,58 @@ async def get_verify_shorted_link(link):
             logger.error(e)
             return link
     else:
-  #      response = requests.get(f"https://{SHORTLINK_URL}/api?api={SHORTLINK_API}&url={link}")
- #       data = response.json()
-  #      if data["status"] == "success" or rget.status_code == 200:
-   #         return data["shortenedUrl"]
         shortzy = Shortzy(api_key=SHORTLINK_API, base_site=SHORTLINK_URL)
         link = await shortzy.convert(link)
         return link
 
+# Check if token is valid and not used
 async def check_token(bot, userid, token):
     user = await bot.get_users(userid)
-    if user.id in TOKENS.keys():
-        TKN = TOKENS[user.id]
-        if token in TKN.keys():
-            is_used = TKN[token]
-            if is_used == True:
-                return False
-            else:
-                return True
-    else:
-        return False
+    record = await tokens_col.find_one({"user_id": user.id})
+    if record and token in record.get("tokens", {}):
+        return not record["tokens"][token]
+    return False
 
+# Generate and store a token
 async def get_token(bot, userid, link, data):
     user = await bot.get_users(userid)
     token = ''.join(random.choices(string.ascii_letters + string.digits, k=7))
-    TOKENS[user.id] = {token: False}
-    link = f"{link}verify-{user.id}-{token}-{data}"
-    shortened_verify_url = await get_verify_shorted_link(link)
-    return str(shortened_verify_url)
+    await tokens_col.update_one(
+        {"user_id": user.id},
+        {"$set": {f"tokens.{token}": False}},
+        upsert=True
+    )
+    full_link = f"{link}verify-{user.id}-{token}-{data}"
+    shortened = await get_verify_shorted_link(full_link)
+    return str(shortened)
 
+# Mark token as used and store verification date
 async def verify_user(bot, userid, token):
     user = await bot.get_users(userid)
-    TOKENS[user.id] = {token: True}
+    await tokens_col.update_one(
+        {"user_id": user.id},
+        {"$set": {f"tokens.{token}": True}},
+        upsert=True
+    )
     tz = pytz.timezone('Asia/Kolkata')
-    today = date.today()
-    VERIFIED[user.id] = str(today)
+    today = datetime.now(tz).date()
+    await verified_col.update_one(
+        {"user_id": user.id},
+        {"$set": {"verified_date": str(today)}},
+        upsert=True
+    )
 
+# Check if user is verified today
 async def check_verification(bot, userid):
     user = await bot.get_users(userid)
     tz = pytz.timezone('Asia/Kolkata')
-    today = date.today()
-    if user.id in VERIFIED.keys():
-        EXP = VERIFIED[user.id]
-        years, month, day = EXP.split('-')
-        comp = date(int(years), int(month), int(day))
-        if comp<today:
+    today = datetime.now(tz).date()
+
+    record = await verified_col.find_one({"user_id": user.id})
+    if record:
+        try:
+            verified_date = datetime.strptime(record["verified_date"], "%Y-%m-%d").date()
+            return verified_date >= today
+        except:
             return False
-        else:
-            return True
-    else:
-        return False
+    return False
