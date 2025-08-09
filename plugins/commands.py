@@ -145,7 +145,7 @@ async def start(client, message):
                 await message.reply_text("⚠️ Internal error while checking channel join status.")
                 return
 
-            if not await check_verification(client, message.from_user.id) and VERIFY_MODE == True:
+            if not await check_verification(client, message.from_user.id):
                 btn = [[
                     InlineKeyboardButton("Verify", url=await get_token(client, message.from_user.id, f"https://telegram.me/{username}?start=", data))
                 ],[
