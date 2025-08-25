@@ -17,27 +17,33 @@ async def allowed(_, __, message):
 
 
 
+IMAGE_PATH = "https://www.wallpaperflare.com/static/423/626/411/angel-beats-girl-hair-pink-wallpaper.jpg"   # <- Put your image file in bot folder
 
-@Client.on_message((filters.document | filters.video | filters.audio) & filters.private & filters.create(allowed))
+@Client.on_message((filters.document | filters.video | filters.audio | filters.photo) & filters.private & filters.create(allowed))
 async def incoming_gen_link(bot, message):
     username = (await bot.get_me()).username
     file_type = message.media
     post = await message.copy(LOG_CHANNEL)
     file_id = str(post.id)
-    string = 'file_'
-    string += file_id
+    string = 'file_' + file_id
     outstr = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
+    
     user_id = message.from_user.id
     user = await get_user(user_id)
-    if WEBSITE_URL_MODE == True:
+
+    if WEBSITE_URL_MODE:
         share_link = f"{WEBSITE_URL}?Tech_VJ={outstr}"
     else:
         share_link = f"https://t.me/{username}?start={outstr}"
+
     if user["base_site"] and user["shortener_api"] != None:
         short_link = await get_short_link(user, share_link)
-        await message.reply(f"<b>⭕ ʜᴇʀᴇ ɪs ʏᴏᴜʀ ʟɪɴᴋ:\n\n🖇️ sʜᴏʀᴛ ʟɪɴᴋ :- {short_link}</b>")
+        caption = f"<b>⭕ ʜᴇʀᴇ ɪs ʏᴏᴜʀ ʟɪɴᴋ:\n\n🖇️ sʜᴏʀᴛ ʟɪɴᴋ :- {short_link}</b>"
     else:
-        await message.reply(f"<b>⭕ New Video:\n\n🔗 ʟɪɴᴋ :- {share_link}</b>")
+        caption = f"<b>⭕ New File:\n\n🔗 ʟɪɴᴋ :- {share_link}</b>"
+
+    # 🖼️ Send reply with image + caption
+    await message.reply_photo(photo=IMAGE_PATH, caption=caption)
 
 
 @Client.on_message(filters.command(['link']) & filters.create(allowed))
