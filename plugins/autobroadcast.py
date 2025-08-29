@@ -27,7 +27,8 @@ async def send_files_to_user(user_id: int):
                     break
 
             if not next_file:
-                await asyncio.sleep(1800)  # wait before checking again
+                # sab files bhej diye, wait karo jab tak naya file na aaye
+                await asyncio.sleep(1800)
                 continue
 
             # send file
@@ -38,11 +39,13 @@ async def send_files_to_user(user_id: int):
                 await db.add_file(user_id, next_file)
 
             except Exception as e:
+                print(f"❌ Failed to send to {user_id}: {e}")
 
             # wait 30 min before sending next file
             await asyncio.sleep(1800)
 
         except Exception as e:
+            print(f"🔥 Error in loop for user {user_id}: {e}")
             await asyncio.sleep(60)  # retry after 1 min
 
 
@@ -55,6 +58,11 @@ async def auto_broadcast():
         tasks.append(asyncio.create_task(send_files_to_user(user_id)))
 
     await asyncio.gather(*tasks)
-  
-await auto_broadcast()
 
+
+async def main():
+    await app.start()
+    await auto_broadcast()
+
+if __name__ == "__main__":
+    asyncio.run(main())
