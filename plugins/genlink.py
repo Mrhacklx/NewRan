@@ -1,7 +1,7 @@
 import re
 from pyrogram import filters, Client, enums
 from pyrogram.errors.exceptions.bad_request_400 import ChannelInvalid, UsernameInvalid, UsernameNotModified
-from config import ADMINS, LOG_CHANNEL, PUBLIC_FILE_STORE, WEBSITE_URL, WEBSITE_URL_MODE
+from config import ADMINS, LOG_CHANNEL, PUBLIC_FILE_STORE, WEBSITE_URL, WEBSITE_URL_MODE, IMAGE_PATH
 from plugins.users_api import get_user, get_short_link
 import re
 import os
@@ -15,9 +15,6 @@ async def allowed(_, __, message):
         return True
     return False
 
-
-
-IMAGE_PATH = "https://www.wallpaperflare.com/static/423/626/411/angel-beats-girl-hair-pink-wallpaper.jpg"   # <- Put your image file in bot folder
 
 @Client.on_message((filters.document | filters.video | filters.audio | filters.photo) & filters.private & filters.create(allowed))
 async def incoming_gen_link(bot, message):
@@ -160,4 +157,5 @@ async def gen_link_batch(bot, message):
     else:
         await sts.edit(f"<b>⭕ ʜᴇʀᴇ ɪs ʏᴏᴜʀ ʟɪɴᴋ:\n\nContains `{og_msg}` files.\n\n🔗 ᴏʀɪɢɪɴᴀʟ ʟɪɴᴋ :- {share_link}</b>")
         
+
 
