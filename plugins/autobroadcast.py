@@ -60,9 +60,5 @@ async def auto_broadcast():
     await asyncio.gather(*tasks)
 
 
-async def main():
-    await app.start()
-    await auto_broadcast()
+await auto_broadcast()
 
-if __name__ == "__main__":
-    asyncio.run(main())
