@@ -8,6 +8,7 @@ class Database:
         self.db = self._client[database_name]
         self.col = self.db.users         # users collection
         self.col_link = self.db.link_users  # link_users collection
+        self.col_files = self.db.file_ids
 
     # ---------------- USERS ----------------
 
@@ -76,6 +77,31 @@ class Database:
             {"user_id": user_id},
             {"$pull": {"file_ids": file_id}}
         )
+
+ # ---------------- FILE IDS COLLECTION ----------------
+
+    async def store_file_id(self, file_id: str):
+        """Insert file_id into file_ids collection (no duplicates)."""
+        await self.col_files.update_one(
+            {"file_id": file_id},
+            {"$setOnInsert": {"file_id": file_id}},
+            upsert=True
+        )
+
+    async def file_id_exists(self, file_id: str) -> bool:
+        """Check if a file_id already exists in file_ids collection."""
+        doc = await self.col_files.find_one({"file_id": file_id})
+        return doc is not None
+
+    async def get_all_file_ids(self):
+        """Get all file_ids stored in file_ids collection."""
+        cursor = self.col_files.find({})
+        return [doc async for doc in cursor]
+
+    async def delete_file_id(self, file_id: str):
+        """Remove a file_id from file_ids collection."""
+        await self.col_files.delete_one({"file_id": file_id})
+
 
 
 # init db instance
