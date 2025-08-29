@@ -1,14 +1,11 @@
-
-from pyrogram.errors import InputUserDeactivated, UserNotParticipant, FloodWait, UserIsBlocked, PeerIdInvalid
-from plugins.dbusers import db
+from pyrogram.errors import InputUserDeactivated, FloodWait, UserIsBlocked, PeerIdInvalid
 from pyrogram import Client, filters
+from plugins.dbusers import db
 from config import ADMINS
-import asyncio
-import datetime
-import time
+import asyncio, datetime, time
 
 
-
+# Send message to a single user
 async def broadcast_messages(user_id, message):
     try:
         await message.copy(chat_id=user_id)
@@ -16,65 +13,68 @@ async def broadcast_messages(user_id, message):
     except FloodWait as e:
         await asyncio.sleep(e.value)
         return await broadcast_messages(user_id, message)
-    except InputUserDeactivated:
+    except (InputUserDeactivated, UserIsBlocked, PeerIdInvalid):
         await db.delete_user(int(user_id))
-        return False, "Deleted"
-    except UserIsBlocked:
-        await db.delete_user(int(user_id))
-        return False, "Blocked"
-    except PeerIdInvalid:
-        await db.delete_user(int(user_id))
-        return False, "Error"
-    except Exception as e:
+        return False, "Removed"
+    except Exception:
         return False, "Error"
 
 
-
-@Client.on_message(filters.command("broadcast") & filters.user(ADMINS) & filters.reply)
-async def verupikkals(bot, message):
+# 🚀 Main broadcast function
+async def start_broadcast(bot, b_msg, sts=None):
     users = await db.get_all_users()
-    b_msg = message.reply_to_message
-    sts = await message.reply_text(text='**Broadcasting your messages...**')
-    start_time = time.time()
     total_users = await db.total_users_count()
-    done = 0
-    blocked = 0
-    deleted = 0
-    failed = 0
-    success = 0
 
-
+    start_time = time.time()
+    done = success = removed = failed = 0
 
     async for user in users:
-        if 'id' in user:
-            pti, sh = await broadcast_messages(int(user['id']), b_msg)
-            if pti:
-                success += 1
-            elif pti == False:
-                if sh == "Blocked":
-                    blocked += 1
-                elif sh == "Deleted":
-                    deleted += 1
-                elif sh == "Error":
-                    failed += 1
-            done += 1
-            if not done % 20:
-                try:
-                    await sts.edit(f"Broadcast in progress:\n\nTotal Users {total_users}\nCompleted: {done} / {total_users}\nSuccess: {success}\nBlocked: {blocked}\nDeleted: {deleted}")
-                except:
-                    pass
-        else:
-            # Handle the case where 'id' key is missing in the user dictionary
-            done += 1
+        if "id" not in user:
             failed += 1
-            if not done % 20:
-                try:
-                    await sts.edit(f"Broadcast in progress:\n\nTotal Users {total_users}\nCompleted: {done} / {total_users}\nSuccess: {success}\nBlocked: {blocked}\nDeleted: {deleted}")
-                except:
-                    pass
-    
-    time_taken = datetime.timedelta(seconds=int(time.time()-start_time))
-    await sts.edit(f"Broadcast Completed:\nCompleted in {time_taken} seconds.\n\nTotal Users {total_users}\nCompleted: {done} / {total_users}\nSuccess: {success}\nBlocked: {blocked}\nDeleted: {deleted}")
+            done += 1
+            continue
+
+        pti, status = await broadcast_messages(int(user["id"]), b_msg)
+
+        if pti:
+            success += 1
+        else:
+            if status == "Removed":
+                removed += 1
+            else:
+                failed += 1
+        done += 1
+
+        # update status every 20 users
+        if sts and not done % 20:
+            try:
+                await sts.edit(
+                    f"📢 Broadcast in progress:\n\n"
+                    f"👥 Total: {total_users}\n"
+                    f"✅ Success: {success}\n"
+                    f"🚫 Removed: {removed}\n"
+                    f"⚠️ Failed: {failed}\n"
+                    f"Progress: {done}/{total_users}"
+                )
+            except:
+                pass
+
+    time_taken = datetime.timedelta(seconds=int(time.time() - start_time))
+    if sts:
+        await sts.edit(
+            f"✅ Broadcast Completed in {time_taken}.\n\n"
+            f"👥 Total: {total_users}\n"
+            f"✅ Success: {success}\n"
+            f"🚫 Removed: {removed}\n"
+            f"⚠️ Failed: {failed}"
+        )
+
+    return {"total": total_users, "success": success, "removed": removed, "failed": failed, "time": str(time_taken)}
 
 
-
+# Command handler
+@Client.on_message(filters.command("broadcast") & filters.user(ADMINS) & filters.reply)
+async def broadcast_cmd(bot, message):
+    b_msg = message.reply_to_message
+    sts = await message.reply_text("🚀 Broadcasting started...")
+    await start_broadcast(bot, b_msg, sts)  # ✅ start broadcast
