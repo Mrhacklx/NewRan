@@ -1,8 +1,11 @@
 from pyrogram.errors import InputUserDeactivated, FloodWait, UserIsBlocked, PeerIdInvalid
+from pyrogram import Client, filters
 from plugins.dbusers import db
+from config import ADMINS
 import asyncio, datetime, time
 
 
+# Send message to a single user
 async def broadcast_messages(user_id, message):
     try:
         await message.copy(chat_id=user_id)
@@ -17,6 +20,7 @@ async def broadcast_messages(user_id, message):
         return False, "Error"
 
 
+# 🚀 Main broadcast function
 async def start_broadcast(bot, b_msg, sts=None):
     users = await db.get_all_users()
     total_users = await db.total_users_count()
@@ -41,6 +45,7 @@ async def start_broadcast(bot, b_msg, sts=None):
                 failed += 1
         done += 1
 
+        # update status every 20 users
         if sts and not done % 20:
             try:
                 await sts.edit(
@@ -65,3 +70,11 @@ async def start_broadcast(bot, b_msg, sts=None):
         )
 
     return {"total": total_users, "success": success, "removed": removed, "failed": failed, "time": str(time_taken)}
+
+
+# Command handler
+@Client.on_message(filters.command("broadcast") & filters.user(ADMINS) & filters.reply)
+async def broadcast_cmd(bot, message):
+    b_msg = message.reply_to_message
+    sts = await message.reply_text("🚀 Broadcasting started...")
+    await start_broadcast(bot, b_msg, sts)  # ✅ start broadcast
