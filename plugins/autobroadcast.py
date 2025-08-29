@@ -60,5 +60,5 @@ async def auto_broadcast():
     await asyncio.gather(*tasks)
 
 
-await auto_broadcast()
+auto_broadcast()
 
