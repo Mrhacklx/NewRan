@@ -25,6 +25,8 @@ ADMINS = [int(admin) if id_pattern.search(admin) else admin for admin in environ
 BOT_USERNAME = environ.get("BOT_USERNAME", "NewRan_bot") # without @
 PORT = environ.get("PORT", "8080")
 
+IMAGE_PATH = "https://www.wallpaperflare.com/static/423/626/411/angel-beats-girl-hair-pink-wallpaper.jpg"
+
 # Clone Info :-
 CLONE_MODE = bool(environ.get('CLONE_MODE', False)) # Set True or False
 
