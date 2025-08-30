@@ -18,6 +18,8 @@ auto_stats = {
     "failed": 0,
     "start_time": None
 }
+auto_interval = 1800  # ⏱ Default interval = 5 minutes
+
 
 # ---------------- Send file link to a single user ----------------
 async def send_file_to_user(user_id: int, file_id: str, bot: Client):
@@ -25,19 +27,16 @@ async def send_file_to_user(user_id: int, file_id: str, bot: Client):
     while True:
         try:
             me = await bot.get_me()
-            username = me.username
-            link = f"https://t.me/NewRan_bot?start={file_id}"
+            link = f"https://t.me/{me.username}?start={file_id}"
             caption = f"<b>⭕ New File:\n\n🔗 Link: {link}</b>"
 
             await bot.send_photo(
                 chat_id=user_id,
                 photo=IMAGE_PATH,
                 caption=caption,
-                parse_mode=ParseMode.HTML   # ✅ Correct way in Pyrogram v2
+                parse_mode=ParseMode.HTML
             )
 
-
-            # log the file in user's file list
             await db.safe_add_file_to_user(user_id, file_id)
             return True, "Success"
 
@@ -51,6 +50,7 @@ async def send_file_to_user(user_id: int, file_id: str, bot: Client):
         except Exception as e:
             print(f"❌ Error sending file to {user_id}: {e}")
             return False, "Error"
+
 
 # ---------------- Manual broadcast ----------------
 async def broadcast_message(user_id: int, message, bot: Client):
@@ -68,6 +68,7 @@ async def broadcast_message(user_id: int, message, bot: Client):
         except Exception as e:
             print(f"❌ Error broadcasting to {user_id}: {e}")
             return False, "Error"
+
 
 async def start_manual_broadcast(bot: Client, b_msg, sts=None):
     """Broadcast a message to all users in users collection."""
@@ -103,7 +104,7 @@ async def start_manual_broadcast(bot: Client, b_msg, sts=None):
                     f"⚠️ Failed: {failed}\n"
                     f"Progress: {done}/{total_users}"
                 )
-            except: 
+            except:
                 pass
 
     elapsed = datetime.timedelta(seconds=int(time.time() - start_time))
@@ -117,18 +118,19 @@ async def start_manual_broadcast(bot: Client, b_msg, sts=None):
         )
     return {"total": total_users, "success": success, "removed": removed, "failed": failed, "time": str(elapsed)}
 
-# ---------------- Auto-broadcast ----------------
+
+# ---------------- Optimized Auto-broadcast ----------------
 async def auto_broadcast(bot: Client):
-    global auto_broadcast_running, auto_stats
+    global auto_broadcast_running, auto_stats, auto_interval
     while auto_broadcast_running:
         try:
             users_cursor = await db.get_all_users_link()
-            file_ids = await db.get_all_file_ids()   # returns list of {"file_id": ...}
+            file_ids = await db.get_all_file_ids()
             file_ids = [doc["file_id"] for doc in file_ids]
             total_users = await db.total_users_link_count()
 
             if not file_ids:
-                await asyncio.sleep(1800)
+                await asyncio.sleep(auto_interval)
                 continue
 
             auto_stats = {
@@ -140,30 +142,40 @@ async def auto_broadcast(bot: Client):
                 "start_time": time.time()
             }
 
-            async for user in users_cursor:
+            # ---- Concurrency Control ----
+            semaphore = asyncio.Semaphore(20)  # send to 20 users at once
+
+            async def process_user(user):
+                nonlocal file_ids
                 if "user_id" not in user:
                     auto_stats["failed"] += 1
                     auto_stats["done"] += 1
-                    continue
+                    return
 
                 user_id = user["user_id"]
                 sent_files = await db.get_files_of_user(user_id)
                 next_file = next((f for f in file_ids if f not in sent_files), None)
                 if not next_file:
                     auto_stats["done"] += 1
-                    continue
+                    return
 
-                ok, status = await send_file_to_user(user_id, next_file, bot)
-                auto_stats["done"] += 1
+                async with semaphore:
+                    ok, status = await send_file_to_user(user_id, next_file, bot)
+                    auto_stats["done"] += 1
 
-                if ok:
-                    auto_stats["success"] += 1
-                elif status == "Removed":
-                    auto_stats["removed"] += 1
-                else:
-                    auto_stats["failed"] += 1
-                    print(f"⚠️ Failed to send file to {user_id}")
+                    if ok:
+                        auto_stats["success"] += 1
+                    elif status == "Removed":
+                        auto_stats["removed"] += 1
+                    else:
+                        auto_stats["failed"] += 1
+                        print(f"⚠️ Failed to send file to {user_id}")
 
+            # Run all user tasks concurrently
+            tasks = [process_user(user) async for user in users_cursor]
+            await asyncio.gather(*tasks)
+
+            # ---- Stats ----
             elapsed = datetime.timedelta(seconds=int(time.time() - auto_stats["start_time"]))
             stats_msg = (
                 f"📊 <b>Auto Broadcast Round Completed</b>\n\n"
@@ -175,16 +187,17 @@ async def auto_broadcast(bot: Client):
             )
             try:
                 await bot.send_message(ADMINS[0], stats_msg)
-            except: 
+            except:
                 print("⚠️ Could not send stats to admin.")
 
-            await asyncio.sleep(1800)  # 30 minutes
+            await asyncio.sleep(auto_interval)  # configurable interval
 
         except asyncio.CancelledError:
             break
         except Exception as e:
             print(f"🔥 Auto broadcast error: {e}")
             await asyncio.sleep(60)
+
 
 # ---------------- Commands ----------------
 @Client.on_message(filters.command("broadcast") & filters.user(ADMINS) & filters.reply)
@@ -193,15 +206,24 @@ async def broadcast_cmd(bot, message):
     sts = await message.reply_text("🚀 Broadcasting started...")
     await start_manual_broadcast(bot, b_msg, sts)
 
+
 @Client.on_message(filters.command(["autobroadcast", "v"]) & filters.user(ADMINS))
 async def start_auto_cmd(bot, message):
-    global auto_broadcast_running, auto_broadcast_task
+    global auto_broadcast_running, auto_broadcast_task, auto_interval
     if auto_broadcast_running:
         return await message.reply_text("⚠️ Auto broadcast already running!")
 
+    # Allow custom interval: /autobroadcast 10 (minutes)
+    args = message.text.split()
+    if len(args) > 1 and args[1].isdigit():
+        auto_interval = int(args[1]) * 60  # convert minutes → seconds
+    else:
+        auto_interval = 300  # default 5 minutes
+
     auto_broadcast_running = True
     auto_broadcast_task = asyncio.create_task(auto_broadcast(bot))
-    await message.reply_text("✅ Auto broadcast started! Sending every 30 minutes.")
+    await message.reply_text(f"✅ Auto broadcast started! Interval = {auto_interval//60} minutes.")
+
 
 @Client.on_message(filters.command("stopbroadcast") & filters.user(ADMINS))
 async def stop_auto_cmd(bot, message):
@@ -215,6 +237,7 @@ async def stop_auto_cmd(bot, message):
         auto_broadcast_task = None
 
     await message.reply_text("🛑 Auto broadcast stopped successfully.")
+
 
 @Client.on_message(filters.command("autostats") & filters.user(ADMINS))
 async def show_auto_stats(bot, message):
