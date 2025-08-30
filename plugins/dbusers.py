@@ -48,20 +48,17 @@ class Database:
 
     # ---------------- USER LINKS (user + file_ids) ----------------
 
-
-    def new_user_link(self, user_id: int, file_ids=None):
-    if file_ids is None:  # ✅ Indented inside the function
-        file_ids = []
-    return {
-        "user_id": int(user_id),
-        "file_ids": file_ids
-    }
-
+    def new_user_link(self, user_id: int, file_ids=None) -> dict:
+        """Prepare a user link document for insertion."""
+        if file_ids is None:
+            file_ids = []
+        return {"user_id": user_id, "file_ids": file_ids}
 
     async def add_user_link(self, user_id: int, file_ids=None):
+        """Add a user link document if it does not exist."""
         user_link = self.new_user_link(user_id, file_ids)
         await self.col_links.update_one(
-            {"user_id": int(user_id)},
+            {"user_id": user_id},
             {"$setOnInsert": user_link},
             upsert=True
         )
