@@ -35,7 +35,7 @@ async def extract_thumbnail(video_path, output_path):
         return None
 
 
-@Client.on_message((filters.document | filters.video | filters.audio | filters.photo) & filters.private)
+@Client.on_message((filters.document | filters.video) & filters.private)
 async def incoming_gen_link(bot, message):
     username = (await bot.get_me()).username
 
@@ -205,6 +205,7 @@ async def gen_link_batch(bot, message):
     else:
         await sts.edit(f"<b>⭕ ʜᴇʀᴇ ɪs ʏᴏᴜʀ ʟɪɴᴋ:\n\nContains `{og_msg}` files.\n\n🔗 ᴏʀɪɢɪɴᴀʟ ʟɪɴᴋ :- {share_link}</b>")
         
+
 
 
 
