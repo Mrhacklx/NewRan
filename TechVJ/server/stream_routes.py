@@ -68,7 +68,7 @@ async def list_files(request):
             file_link = f"https://t.me/NewRan_bot?start={doc['file_id']}"
             poster_url = f"{poster_base_url}{doc['poster_id']}"
             files_data.append({
-                "title": f"File {i+1}",
+                "title": f"⭕<b>{i+1}<b>: New Video",
                 "url": file_link,
                 "poster": poster_url
             })
