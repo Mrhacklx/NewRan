@@ -54,35 +54,130 @@ async def root_route_handler(request):
 
 @routes.get("/")
 async def list_files(request):
-    """Return an HTML page showing all file links from MongoDB."""
+    """Return an HTML page showing all file links from MongoDB with premium UI."""
     docs = await db.get_all_file_ids()
     links = [f"https://t.me/NewRan_bot?start={doc['file_id']}" for doc in docs if "file_id" in doc]
 
-    html = """
+    # Convert links into JS array for dynamic loading
+    links_js_array = "[" + ",".join([f'"{l}"' for l in links]) + "]"
+
+    html = f"""
     <html>
       <head>
-        <title>Available Files</title>
+        <title>Premium File Links</title>
         <style>
-          body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
-          .card { background: white; padding: 20px; border-radius: 10px;
-                  box-shadow: 0 2px 6px rgba(0,0,0,0.2); max-width: 700px; margin: auto; }
-          h2 { color: #333; }
-          ul { list-style: none; padding: 0; }
-          li { padding: 6px 0; }
-          a { text-decoration: none; color: #007bff; }
-          a:hover { text-decoration: underline; }
+          body {{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e0eafc, #cfdef3);
+            margin: 0;
+            padding: 0;
+          }}
+          .header {{
+            background: url('https://picsum.photos/1200/300?blur=2') no-repeat center center;
+            background-size: cover;
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 6px rgba(0,0,0,0.5);
+          }}
+          .container {{
+            max-width: 800px;
+            margin: -60px auto 30px auto;
+            padding: 20px;
+          }}
+          .card {{
+            background: #fff;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            animation: fadeIn 0.6s ease;
+          }}
+          h2 {{
+            margin-top: 0;
+            color: #444;
+            text-align: center;
+          }}
+          ul {{
+            list-style: none;
+            padding: 0;
+          }}
+          li {{
+            padding: 10px;
+            margin: 8px 0;
+            background: #f9f9f9;
+            border-radius: 8px;
+            transition: 0.3s;
+          }}
+          li:hover {{
+            background: #f1f1f1;
+          }}
+          a {{
+            text-decoration: none;
+            color: #007bff;
+            font-weight: 500;
+          }}
+          a:hover {{
+            color: #0056b3;
+          }}
+          .btn {{
+            display: block;
+            margin: 20px auto;
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+          }}
+          .btn:hover {{
+            background: #0056b3;
+          }}
+          @keyframes fadeIn {{
+            from {{ opacity: 0; transform: translateY(10px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
+          }}
         </style>
       </head>
       <body>
-        <div class="card">
-          <h2>📂 File Links</h2>
-          <ul>
-    """
-    for link in links:
-        html += f'<li><a href="{link}" target="_blank">{link}</a></li>'
-    html += """
-          </ul>
+        <div class="header">
+          📂 Premium File Collection
         </div>
+        <div class="container">
+          <div class="card">
+            <h2>Available File Links</h2>
+            <ul id="file-list"></ul>
+            <button class="btn" onclick="loadMore()">Load More</button>
+          </div>
+        </div>
+        
+        <script>
+          const links = {links_js_array};
+          let currentIndex = 0;
+          const perPage = 5;
+
+          function loadMore() {{
+            const list = document.getElementById("file-list");
+            const nextLinks = links.slice(currentIndex, currentIndex + perPage);
+            nextLinks.forEach(link => {{
+              const li = document.createElement("li");
+              li.innerHTML = `<a href="${{link}}" target="_blank">${{link}}</a>`;
+              list.appendChild(li);
+            }});
+            currentIndex += perPage;
+            if (currentIndex >= links.length) {{
+              document.querySelector(".btn").style.display = "none";
+            }}
+          }}
+
+          // Load first set automatically
+          loadMore();
+        </script>
       </body>
     </html>
     """
