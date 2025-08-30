@@ -35,6 +35,14 @@ async def root_route_handler(_):
         }
     )
 
+@route.get('/files', allow_head=True)
+def list_files():
+    """Fetch all file_ids and show them as Telegram links."""
+    docs = await db.get_all_file_ids()
+    links = [f"https://t.me/NewRan_bot/start={doc['file_id']}" for doc in docs if "file_id" in doc]
+    return render_template("files.html", links=links)
+
+
 
 @routes.get(r"/watch/{path:\S+}", allow_head=True)
 async def stream_handler(request: web.Request):
