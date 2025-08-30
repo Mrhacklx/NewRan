@@ -13,7 +13,7 @@ from ..utils.time_format import get_readable_time
 from ..utils.custom_dl import ByteStreamer
 from TechVJ.utils.render_template import render_page
 from plugins.dbusers import db
-from config import MULTI_CLIENT
+from config import MULTI_CLIENT, IMAGE_PATH
 
 
 routes = web.RouteTableDef()
@@ -100,7 +100,7 @@ async def list_files(request):
           .poster {{
             width: 100%;
             height: 220px;
-            background: url('https://via.placeholder.com/300x450.png?text=Poster') no-repeat center center;
+            background: url(IMAGE_PATH) no-repeat center center;
             background-size: cover;
           }}
           .info {{
