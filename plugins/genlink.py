@@ -17,32 +17,59 @@ async def allowed(_, __, message):
     return False
 
 
+import base64
+from pyrogram import Client, filters
+
+# Your other imports...
+# from plugins.dbusers import db
+# from config import LOG_CHANNEL, IMAGE_PATH, WEBSITE_URL, WEBSITE_URL_MODE
+# from utils import get_user, get_short_link
+
 @Client.on_message((filters.document | filters.video | filters.audio | filters.photo) & filters.private & filters.create(allowed))
 async def incoming_gen_link(bot, message):
     username = (await bot.get_me()).username
-    file_type = message.media
     post = await message.copy(LOG_CHANNEL)
+
+    # Unique key for this file
     file_id = str(post.id)
-    string = 'file_' + file_id
+    string = "file_" + file_id
     outstr = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
-    
+
     user_id = message.from_user.id
     user = await get_user(user_id)
 
+    # 🖼️ Try to get a thumbnail (for video or photo)
+    poster_id = None
+    if message.video and message.video.thumbs:
+        thumb_path = await message.download_thumb()
+        thumb_msg = await bot.send_photo(LOG_CHANNEL, photo=thumb_path)
+        poster_id = thumb_msg.photo.file_id
+    elif message.photo:
+        # If user uploaded a photo, use it directly as poster
+        poster_id = message.photo.file_id
+
+    # 🔗 Generate link
     if WEBSITE_URL_MODE:
         share_link = f"{WEBSITE_URL}?Tech_VJ={outstr}"
     else:
         share_link = f"https://t.me/{username}?start={outstr}"
-        await db.store_file_id(outstr)
 
-    if user["base_site"] and user["shortener_api"] != None:
+        # Save into DB with poster
+        await db.store_file_id(outstr, poster_id)
+
+    # ✂️ Short link support
+    if user["base_site"] and user["shortener_api"] is not None:
         short_link = await get_short_link(user, share_link)
         caption = f"<b>⭕ ʜᴇʀᴇ ɪs ʏᴏᴜʀ ʟɪɴᴋ:\n\n🖇️ sʜᴏʀᴛ ʟɪɴᴋ :- {short_link}</b>"
     else:
         caption = f"<b>⭕ New File:\n\n🔗 ʟɪɴᴋ :- {share_link}</b>"
 
-    # 🖼️ Send reply with image + caption
-    await message.reply_photo(photo=IMAGE_PATH, caption=caption)
+    # 🖼️ Reply back to user
+    if poster_id:
+        await message.reply_photo(photo=poster_id, caption=caption)
+    else:
+        # fallback if no poster found
+        await message.reply_photo(photo=IMAGE_PATH, caption=caption)
 
 
 @Client.on_message(filters.command(['link']) & filters.create(allowed))
@@ -159,6 +186,7 @@ async def gen_link_batch(bot, message):
     else:
         await sts.edit(f"<b>⭕ ʜᴇʀᴇ ɪs ʏᴏᴜʀ ʟɪɴᴋ:\n\nContains `{og_msg}` files.\n\n🔗 ᴏʀɪɢɪɴᴀʟ ʟɪɴᴋ :- {share_link}</b>")
         
+
 
 
 
