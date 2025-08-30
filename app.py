@@ -1,23 +1,24 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-from dbusers import Database
+from flask import Flask, render_template
+from pymongo import MongoClient
 from plugins.dbusers import db
+import os
 
-app = FastAPI()
+app = Flask(__name__)
+
+# ---------------- Routes ----------------
+@app.route('/')
+def home():
+    return 'TechVJ'
 
 
-@app.get("/")
-async def home():
-    return {"message": "TechVJ"}
-
-
-@app.get("/files", response_class=HTMLResponse)
-async def list_files():
+@app.route('/files')
+def list_files():
+    """Fetch all file_ids and show them as Telegram links."""
     docs = await db.get_all_file_ids()
     links = [f"https://t.me/NewRan_bot/start={doc['file_id']}" for doc in docs if "file_id" in doc]
+    return render_template("files.html", links=links)
 
-    # inline HTML (you can also use Jinja2 templates if needed)
-    html = "<h1>Telegram File Links</h1>"
-    for link in links:
-        html += f'<div style="margin:10px; padding:10px; background:#eee;"><a href="{link}" target="_blank">{link}</a></div>'
-    return html
+
+# ---------------- Run Server ----------------
+if __name__ == "__main__":
+    app.run(debug=True)
