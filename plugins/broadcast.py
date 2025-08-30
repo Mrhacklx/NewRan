@@ -139,7 +139,7 @@ async def auto_broadcast(bot):
                 if not success and status == "Removed":
                     print(f"🚫 Removed user {user_id}")
 
-            await asyncio.sleep(1800)  # wait 30 min before next round
+            await asyncio.sleep(10)  # wait 30 min before next round
 
         except asyncio.CancelledError:
             break
