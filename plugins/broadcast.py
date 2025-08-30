@@ -18,7 +18,7 @@ auto_stats = {
     "failed": 0,
     "start_time": None
 }
-auto_interval = 1800  # ⏱ Default interval = 5 minutes
+auto_interval = 1800  # ⏱ Default interval = 30 minutes
 
 
 # ---------------- Send file link to a single user ----------------
