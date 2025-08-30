@@ -52,14 +52,29 @@ async def root_route_handler(request):
     """
     return web.Response(text=html, content_type="text/html")
 
-
 @routes.get("/")
 async def list_files(request):
     """Return an HTML page showing all file links from MongoDB in responsive card layout."""
+    
+    # Fetch all file documents
     docs = await db.get_all_file_ids()
-    links = [f"https://t.me/NewRan_bot?start={doc['file_id']}" for doc in docs if "file_id" in doc]
-
-    cards_js_array = "[" + ",".join([f'{{"title":"File {i+1}","url":"{l}"}}' for i, l in enumerate(links)]) + "]"
+    
+    # Prepare card data with file link and poster URL
+    files_data = []
+    poster_base_url = "https://electric-vinni-xyzgetmodp-8bec2832.koyeb.app/poster/"
+    
+    for i, doc in enumerate(docs):
+        if "file_id" in doc and "poster_id" in doc:
+            file_link = f"https://t.me/NewRan_bot?start={doc['file_id']}"
+            poster_url = f"{poster_base_url}{doc['poster_id']}"
+            files_data.append({
+                "title": f"File {i+1}",
+                "url": file_link,
+                "poster": poster_url
+            })
+    
+    # Convert to JS array string
+    cards_js_array = "[" + ",".join([f'{{"title":"{f["title"]}","url":"{f["url"]}","poster":"{f["poster"]}"}}' for f in files_data]) + "]"
 
     html = f"""
     <html>
@@ -115,9 +130,9 @@ async def list_files(request):
           }}
           .poster {{
             width: 100%;
-            padding-top: 150%; /* keeps ratio */
-            background: url('{IMAGE_PATH}') no-repeat center center;
+            padding-top: 150%;
             background-size: cover;
+            background-position: center;
           }}
           .info {{
             padding: 10px;
@@ -159,7 +174,7 @@ async def list_files(request):
               card.className = "card";
               card.onclick = () => window.open(f.url, "_blank");
               card.innerHTML = `
-                <div class="poster"></div>
+                <div class="poster" style="background-image: url('${{f.poster}}')"></div>
                 <div class="info">${{f.title}}</div>
               `;
               grid.appendChild(card);
@@ -170,7 +185,6 @@ async def list_files(request):
             }}
           }}
 
-          // Load first batch automatically
           loadMore();
         </script>
       </body>
