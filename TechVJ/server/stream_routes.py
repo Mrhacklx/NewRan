@@ -177,7 +177,7 @@ async def list_files(request):
 
     return web.Response(text=html, content_type="text/html")
 
-@app.get("/poster/{file_id}")
+@routes.get("/poster/{file_id}")
 async def get_poster(file_id: str):
     try:
         # Get file path from Telegram
