@@ -1,11 +1,10 @@
 import asyncio
 import datetime
 import time
-from pyrogram import filters
+from pyrogram import Client, filters
 from pyrogram.errors import InputUserDeactivated, FloodWait, UserIsBlocked, PeerIdInvalid
 from plugins.dbusers import db
 from config import ADMINS, IMAGE_PATH
-from bot import app   # main client
 
 
 # Global flags
@@ -150,7 +149,7 @@ async def auto_broadcast(bot):
 
 
 # 📌 Manual broadcast command
-@app.on_message(filters.command("broadcast") & filters.user(ADMINS) & filters.reply)
+@Client.on_message(filters.command("broadcast") & filters.user(ADMINS) & filters.reply)
 async def broadcast_cmd(bot, message):
     b_msg = message.reply_to_message
     sts = await message.reply_text("🚀 Broadcasting started...")
@@ -158,7 +157,7 @@ async def broadcast_cmd(bot, message):
 
 
 # 📌 Start auto broadcast
-@app.on_message(filters.command(["autobroadcast", "v"]) & filters.user(ADMINS))
+@Client.on_message(filters.command(["autobroadcast", "v"]) & filters.user(ADMINS))
 async def start_auto_cmd(bot, message):
     global auto_broadcast_running, auto_broadcast_task
     if auto_broadcast_running:
@@ -170,7 +169,7 @@ async def start_auto_cmd(bot, message):
 
 
 # 📌 Stop auto broadcast
-@app.on_message(filters.command("stopbroadcast") & filters.user(ADMINS))
+@Client.on_message(filters.command("stopbroadcast") & filters.user(ADMINS))
 async def stop_auto_cmd(bot, message):
     global auto_broadcast_running, auto_broadcast_task
     if not auto_broadcast_running:
