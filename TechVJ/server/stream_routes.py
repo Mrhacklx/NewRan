@@ -54,128 +54,107 @@ async def root_route_handler(request):
 
 @routes.get("/")
 async def list_files(request):
-    """Return an HTML page showing all file links from MongoDB with premium UI."""
+    """Return an HTML page showing all file links from MongoDB in card layout."""
     docs = await db.get_all_file_ids()
     links = [f"https://t.me/NewRan_bot?start={doc['file_id']}" for doc in docs if "file_id" in doc]
 
-    # Convert links into JS array for dynamic loading
-    links_js_array = "[" + ",".join([f'"{l}"' for l in links]) + "]"
+    # Example: use the file_id as title (you can replace with your DB field for title/desc)
+    cards_js_array = "[" + ",".join([f'{{"title":"File {i+1}","url":"{l}"}}' for i, l in enumerate(links)]) + "]"
 
     html = f"""
     <html>
       <head>
-        <title>Premium File Links</title>
+        <title>Premium Files</title>
         <style>
           body {{
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #e0eafc, #cfdef3);
+            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 0;
+            background: #121212;
+            color: white;
           }}
           .header {{
-            background: url('https://picsum.photos/1200/300?blur=2') no-repeat center center;
-            background-size: cover;
-            height: 250px;
+            background: #1f1f1f;
+            padding: 15px;
+            font-size: 20px;
+            font-weight: bold;
             display: flex;
             align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 2rem;
-            font-weight: bold;
-            text-shadow: 2px 2px 6px rgba(0,0,0,0.5);
           }}
-          .container {{
-            max-width: 800px;
-            margin: -60px auto 30px auto;
+          .grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
             padding: 20px;
           }}
           .card {{
-            background: #fff;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-            animation: fadeIn 0.6s ease;
+            background: #1e1e1e;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            cursor: pointer;
+            transition: transform 0.3s;
           }}
-          h2 {{
-            margin-top: 0;
-            color: #444;
-            text-align: center;
+          .card:hover {{
+            transform: scale(1.05);
           }}
-          ul {{
-            list-style: none;
-            padding: 0;
+          .poster {{
+            width: 100%;
+            height: 220px;
+            background: url('https://via.placeholder.com/300x450.png?text=Poster') no-repeat center center;
+            background-size: cover;
           }}
-          li {{
+          .info {{
             padding: 10px;
-            margin: 8px 0;
-            background: #f9f9f9;
-            border-radius: 8px;
-            transition: 0.3s;
-          }}
-          li:hover {{
-            background: #f1f1f1;
-          }}
-          a {{
-            text-decoration: none;
-            color: #007bff;
-            font-weight: 500;
-          }}
-          a:hover {{
-            color: #0056b3;
+            font-size: 14px;
+            text-align: center;
           }}
           .btn {{
             display: block;
             margin: 20px auto;
             padding: 12px 24px;
-            background: #007bff;
+            background: #e50914;
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 5px;
             font-size: 16px;
             cursor: pointer;
             transition: 0.3s;
           }}
           .btn:hover {{
-            background: #0056b3;
-          }}
-          @keyframes fadeIn {{
-            from {{ opacity: 0; transform: translateY(10px); }}
-            to {{ opacity: 1; transform: translateY(0); }}
+            background: #b0060f;
           }}
         </style>
       </head>
       <body>
-        <div class="header">
-          📂 Premium File Collection
-        </div>
-        <div class="container">
-          <div class="card">
-            <h2>Available File Links</h2>
-            <ul id="file-list"></ul>
-            <button class="btn" onclick="loadMore()">Load More</button>
-          </div>
-        </div>
-        
+        <div class="header">🔥 Latest Releases</div>
+        <div class="grid" id="file-grid"></div>
+        <button class="btn" onclick="loadMore()">Load More</button>
+
         <script>
-          const links = {links_js_array};
+          const files = {cards_js_array};
           let currentIndex = 0;
-          const perPage = 5;
+          const perPage = 6;
 
           function loadMore() {{
-            const list = document.getElementById("file-list");
-            const nextLinks = links.slice(currentIndex, currentIndex + perPage);
-            nextLinks.forEach(link => {{
-              const li = document.createElement("li");
-              li.innerHTML = `<a href="${{link}}" target="_blank">${{link}}</a>`;
-              list.appendChild(li);
+            const grid = document.getElementById("file-grid");
+            const nextFiles = files.slice(currentIndex, currentIndex + perPage);
+            nextFiles.forEach(f => {{
+              const card = document.createElement("div");
+              card.className = "card";
+              card.onclick = () => window.open(f.url, "_blank");
+              card.innerHTML = `
+                <div class="poster"></div>
+                <div class="info">${{f.title}}</div>
+              `;
+              grid.appendChild(card);
             }});
             currentIndex += perPage;
-            if (currentIndex >= links.length) {{
+            if (currentIndex >= files.length) {{
               document.querySelector(".btn").style.display = "none";
             }}
           }}
 
-          // Load first set automatically
+          // Load first batch automatically
           loadMore();
         </script>
       </body>
