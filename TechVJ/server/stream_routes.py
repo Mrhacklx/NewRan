@@ -18,7 +18,7 @@ from config import MULTI_CLIENT
 
 routes = web.RouteTableDef()
 
-@routes.get("/", allow_head=True)
+@routes.get("/status", allow_head=True)
 async def root_route_handler(request):
     html = f"""
     <html>
@@ -52,7 +52,7 @@ async def root_route_handler(request):
 
 
 
-@routes.get("/files")
+@routes.get("/")
 async def list_files(request):
     """Return an HTML page showing all file links from MongoDB."""
     docs = await db.get_all_file_ids()
