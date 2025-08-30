@@ -184,22 +184,13 @@ async def get_poster(request: web.Request):
     file_id = request.match_info["file_id"]
     
     try:
-        client = StreamBot  # or choose a multi_clients index, e.g., multi_clients[0]
-        message = await client.get_messages(LOG_CHANNEL, int(file_id))
+        client = StreamBot  # or choose multi_clients[0]
         
-        poster_id = None
-        mime_type = "image/jpeg"
-        
-        if message.photo:
-            poster_id = message.photo.file_id
-        elif message.video and message.video.thumbs:
-            poster_id = message.video.thumbs[0].file_id
-        else:
-            raise web.HTTPNotFound(text="Poster not found")
-
-        file_bytes = await client.download_media(poster_id, in_memory=True)
+        # Download media directly from the file_id
+        file_bytes = await client.download_media(file_id, in_memory=True)
         file_bytes.seek(0)
-        return web.Response(body=file_bytes.read(), content_type=mime_type)
+        
+        return web.Response(body=file_bytes.read(), content_type="image/jpeg")
     
     except Exception as e:
         logging.error(f"Error fetching poster: {e}")
