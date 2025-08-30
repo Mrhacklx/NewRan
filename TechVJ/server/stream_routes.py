@@ -13,7 +13,7 @@ from ..utils.time_format import get_readable_time
 from ..utils.custom_dl import ByteStreamer
 from TechVJ.utils.render_template import render_page
 from plugins.dbusers import db
-from config import MULTI_CLIENT, IMAGE_PATH
+from config import MULTI_CLIENT, IMAGE_PATH, LOG_CHANNEL
 
 
 routes = web.RouteTableDef()
@@ -176,6 +176,21 @@ async def list_files(request):
     """
 
     return web.Response(text=html, content_type="text/html")
+
+@app.get("/poster/{file_id}")
+async def get_poster(file_id: str):
+    try:
+        # Get file path from Telegram
+        file = await bot.get_messages(LOG_CHANNEL, int(file_id))
+        poster_id = file.photo.file_id if file.photo else None
+        if not poster_id:
+            raise HTTPException(404, "Poster not found")
+
+        file_path = await bot.download_media(poster_id, in_memory=True)
+
+        return Response(content=file_path.read(), media_type="image/jpeg")
+    except Exception as e:
+        raise HTTPException(500, str(e))
 
 
 @routes.get(r"/watch/{path:\S+}", allow_head=True)
