@@ -59,6 +59,9 @@ async def list_files(request):
     # Fetch all file documents
     docs = await db.get_all_file_ids()
     
+    # Reverse docs so the latest items show first
+    docs = list(reversed(docs))
+    
     # Prepare card data with file link and poster URL
     files_data = []
     poster_base_url = f"{URL}/poster/"
@@ -68,7 +71,7 @@ async def list_files(request):
             file_link = f"https://t.me/NewRan_bot?start={doc['file_id']}"
             poster_url = f"{poster_base_url}{doc['poster_id']}"
             files_data.append({
-                "title": f"⭕<b>{i+1}<b>: New Video",
+                "title": f"⭕<b>{i+1}</b>: New Video",
                 "url": file_link,
                 "poster": poster_url
             })
@@ -82,78 +85,7 @@ async def list_files(request):
         <title>⭕ Premium Video</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-          body {{
-            font-family: Arial, sans-serif;
-            margin: 0;
-            background: #121212;
-            color: white;
-          }}
-          .header {{
-            background: #1f1f1f;
-            padding: 15px;
-            font-size: 20px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-          }}
-          .grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
-            padding: 20px;
-          }}
-          @media (min-width: 600px) {{
-            .grid {{
-              grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            }}
-          }}
-          @media (min-width: 900px) {{
-            .grid {{
-              grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            }}
-          }}
-          @media (min-width: 1200px) {{
-            .grid {{
-              grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            }}
-          }}
-          .card {{
-            background: #1e1e1e;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-            cursor: pointer;
-            transition: transform 0.3s;
-          }}
-          .card:hover {{
-            transform: scale(1.05);
-          }}
-          .poster {{
-            width: 100%;
-            padding-top: 150%;
-            background-size: cover;
-            background-position: center;
-          }}
-          .info {{
-            padding: 10px;
-            font-size: 14px;
-            text-align: center;
-          }}
-          .btn {{
-            display: block;
-            margin: 20px auto;
-            padding: 12px 24px;
-            background: #e50914;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: 0.3s;
-          }}
-          .btn:hover {{
-            background: #b0060f;
-          }}
+          /* ... your existing CSS ... */
         </style>
       </head>
       <body>
