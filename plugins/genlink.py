@@ -18,17 +18,6 @@ async def allowed(_, __, message):
     return False
     
 
-import base64
-import os
-import asyncio
-import ffmpeg
-from pyrogram import Client, filters
-from config import LOG_CHANNEL, WEBSITE_URL, WEBSITE_URL_MODE
-from plugins.dbusers import db
-from plugins.shortener import get_short_link
-from plugins.users import get_user
-
-
 # 📌 helper: extract thumbnail from video
 async def extract_thumbnail(video_path, output_path):
     try:
@@ -216,6 +205,7 @@ async def gen_link_batch(bot, message):
     else:
         await sts.edit(f"<b>⭕ ʜᴇʀᴇ ɪs ʏᴏᴜʀ ʟɪɴᴋ:\n\nContains `{og_msg}` files.\n\n🔗 ᴏʀɪɢɪɴᴀʟ ʟɪɴᴋ :- {share_link}</b>")
         
+
 
 
 
