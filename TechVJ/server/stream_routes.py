@@ -13,7 +13,7 @@ from ..utils.time_format import get_readable_time
 from ..utils.custom_dl import ByteStreamer
 from TechVJ.utils.render_template import render_page
 from plugins.dbusers import db
-from config import MULTI_CLIENT, IMAGE_PATH, LOG_CHANNEL
+from config import MULTI_CLIENT, IMAGE_PATH, LOG_CHANNEL, URL 
 from pyrogram import Client
 import aiohttp
 
@@ -61,7 +61,7 @@ async def list_files(request):
     
     # Prepare card data with file link and poster URL
     files_data = []
-    poster_base_url = "https://electric-vinni-xyzgetmodp-8bec2832.koyeb.app/poster/"
+    poster_base_url = f"{URL}/poster/"
     
     for i, doc in enumerate(docs):
         if "file_id" in doc and "poster_id" in doc:
