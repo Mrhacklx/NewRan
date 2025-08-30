@@ -14,6 +14,8 @@ from ..utils.custom_dl import ByteStreamer
 from TechVJ.utils.render_template import render_page
 from plugins.dbusers import db
 from config import MULTI_CLIENT, IMAGE_PATH, LOG_CHANNEL
+from pyrogram import Client
+import aiohttp
 
 
 routes = web.RouteTableDef()
@@ -178,20 +180,30 @@ async def list_files(request):
     return web.Response(text=html, content_type="text/html")
 
 @routes.get("/poster/{file_id}")
-async def get_poster(file_id: str):
+async def get_poster(request: web.Request):
+    file_id = request.match_info["file_id"]
+    
     try:
-        # Get file path from Telegram
-        file = await bot.get_messages(LOG_CHANNEL, int(file_id))
-        poster_id = file.photo.file_id if file.photo else None
-        if not poster_id:
-            raise HTTPException(404, "Poster not found")
+        client = StreamBot  # or choose a multi_clients index, e.g., multi_clients[0]
+        message = await client.get_messages(LOG_CHANNEL, int(file_id))
+        
+        poster_id = None
+        mime_type = "image/jpeg"
+        
+        if message.photo:
+            poster_id = message.photo.file_id
+        elif message.video and message.video.thumbs:
+            poster_id = message.video.thumbs[0].file_id
+        else:
+            raise web.HTTPNotFound(text="Poster not found")
 
-        file_path = await bot.download_media(poster_id, in_memory=True)
-
-        return Response(content=file_path.read(), media_type="image/jpeg")
+        file_bytes = await client.download_media(poster_id, in_memory=True)
+        file_bytes.seek(0)
+        return web.Response(body=file_bytes.read(), content_type=mime_type)
+    
     except Exception as e:
-        raise HTTPException(500, str(e))
-
+        logging.error(f"Error fetching poster: {e}")
+        raise web.HTTPInternalServerError(text=str(e))
 
 @routes.get(r"/watch/{path:\S+}", allow_head=True)
 async def stream_handler(request: web.Request):
