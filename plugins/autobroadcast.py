@@ -1,5 +1,5 @@
 import asyncio
-from db_file import db
+from plugins.dbusers import db
 from pyrogram import Client
 from config import API_ID, API_HASH, BOT_TOKEN, IMAGE_PATH 
 
