@@ -119,17 +119,19 @@ class Database:
 
     # ---------------- FILE IDS COLLECTION ----------------
 
-    async def store_file_id(self, file_id: str, poster_id: str = None):
-    """Store a unique file_id (and optional poster_id) in the file_ids collection."""
-    data = {"file_id": file_id}
-    if poster_id:   # ✅ Only add if available
-        data["poster_id"] = poster_id
 
-    await self.col_files.update_one(
-        {"file_id": file_id},   # Find by file_id
-        {"$setOnInsert": data}, # Insert only if new
-        upsert=True
-    )
+    async def store_file_id(self, file_id: str, poster_id: str = None):
+        """Store a unique file_id (and optional poster_id) in the file_ids collection."""
+        data = {"file_id": file_id}
+        if poster_id:   # ✅ Only add poster if provided
+            data["poster_id"] = poster_id
+    
+        await self.col_files.update_one(
+            {"file_id": file_id},   # find by file_id
+            {"$setOnInsert": data}, # insert only if new
+            upsert=True
+        )
+
 
 
     async def file_id_exists(self, file_id: str) -> bool:
