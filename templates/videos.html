@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Video Links</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; background:#f8f9fa; margin:0; padding:24px; }
+    h1 { margin:0 0 16px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:18px; }
+    .card { background:#fff; border-radius:12px; padding:14px; box-shadow:0 2px 8px rgba(0,0,0,.08); }
+    .thumb { width:100%; height:auto; border-radius:8px; margin-bottom:10px; display:block; }
+    .empty { height:180px; background:#eee; display:flex; align-items:center; justify-content:center; border-radius:8px; margin-bottom:10px; color:#666; }
+    .link { color:#0b5dd7; text-decoration:none; word-break:break-all; }
+    .pager { margin-top:22px; display:flex; gap:10px; justify-content:center; }
+    .btn { background:#0b5dd7; color:#fff; padding:8px 14px; border-radius:8px; text-decoration:none; }
+    .btn[aria-disabled="true"] { background:#c8c8c8; pointer-events:none; }
+  </style>
+</head>
+<body>
+  <h1>Video Links</h1>
+
+  <div class="grid">
+    {% for link in videos %}
+      <div class="card">
+        {% set video_id = None %}
+        {% if "youtube.com" in link and "v=" in link %}
+          {% set video_id = link.split("v=")[1].split("&")[0] %}
+        {% elif "youtu.be/" in link %}
+          {% set video_id = link.split("youtu.be/")[1].split("?")[0] %}
+        {% endif %}
+
+        {% if video_id %}
+          <img class="thumb" src="https://img.youtube.com/vi/{{ video_id }}/hqdefault.jpg" alt="Thumbnail">
+        {% else %}
+          <div class="empty">No Thumbnail</div>
+        {% endif %}
+
+        <a class="link" href="{{ link }}" target="_blank" rel="noopener">{{ link }}</a>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="pager">
+    <a class="btn" href="/videos?page={{ prev_page }}&size={{ size }}" aria-disabled="{{ 'false' if prev_page else 'true' }}">Previous</a>
+    <a class="btn" href="/videos?page={{ next_page }}&size={{ size }}" aria-disabled="{{ 'false' if next_page else 'true' }}">Next</a>
+  </div>
+</body>
+</html>
