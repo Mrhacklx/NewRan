@@ -6,8 +6,7 @@ from pyrogram.errors import InputUserDeactivated, FloodWait, UserIsBlocked, Peer
 from plugins.dbusers import db
 from config import ADMINS, IMAGE_PATH
 
-
-# Global flags & stats
+# ---------------- Global flags & stats ----------------
 auto_broadcast_running = False
 auto_broadcast_task = None
 auto_stats = {
@@ -19,8 +18,7 @@ auto_stats = {
     "start_time": None
 }
 
-
-# ✅ Send file link to a single user (auto mode)
+# ---------------- Send file link to a single user ----------------
 async def send_file_to_user(user_id, file_id, bot):
     try:
         me = await bot.get_me()
@@ -34,7 +32,7 @@ async def send_file_to_user(user_id, file_id, bot):
             caption=caption,
             parse_mode="html"
         )
-        await db.add_file(user_id, file_id)   # ✅ log sent file for user
+        await db.add_file(user_id, file_id)  # log sent file
         return True, "Success"
 
     except FloodWait as e:
@@ -47,8 +45,7 @@ async def send_file_to_user(user_id, file_id, bot):
         print(f"❌ Error sending to {user_id}: {e}")
         return False, "Error"
 
-
-# ✅ Send message to user (manual broadcast)
+# ---------------- Manual broadcast ----------------
 async def broadcast_messages(user_id, message):
     try:
         await message.copy(chat_id=user_id)
@@ -63,8 +60,6 @@ async def broadcast_messages(user_id, message):
         print(f"❌ Error sending broadcast to {user_id}: {e}")
         return False, "Error"
 
-
-# ✅ Manual broadcast (send replied message to all users)
 async def start_broadcast(bot, b_msg, sts=None):
     users = await db.get_all_users()
     total_users = await db.total_users_count()
@@ -89,7 +84,7 @@ async def start_broadcast(bot, b_msg, sts=None):
                 failed += 1
         done += 1
 
-        if sts and not done % 20:  # update every 20 users
+        if sts and not done % 20:
             try:
                 await sts.edit(
                     f"📢 Broadcast in progress:\n\n"
@@ -113,21 +108,21 @@ async def start_broadcast(bot, b_msg, sts=None):
         )
     return {"total": total_users, "success": success, "removed": removed, "failed": failed, "time": str(time_taken)}
 
-
-# 📌 Auto-broadcast (every 30 min, file-by-file with stats)
+# ---------------- Auto-broadcast ----------------
 async def auto_broadcast(bot):
     global auto_broadcast_running, auto_stats
     while auto_broadcast_running:
         try:
             users = await db.get_all_users()
-            file_ids = await db.get_all_file_ids()
+            file_docs = await db.get_all_file_ids()
+            file_ids = [doc["file_id"] for doc in file_docs]  # extract strings
             total_users = await db.total_users_count()
 
             if not file_ids:
                 await asyncio.sleep(1800)
                 continue
 
-            # reset stats for new round
+            # Reset stats for this round
             auto_stats = {
                 "total": total_users,
                 "done": 0,
@@ -154,20 +149,20 @@ async def auto_broadcast(bot):
                         break
 
                 if not next_file:
-                    continue  # all files already sent to this user
+                    continue
 
                 ok, status = await send_file_to_user(user_id, next_file, bot)
+                auto_stats["done"] += 1
 
                 if ok:
                     auto_stats["success"] += 1
+                elif status == "Removed":
+                    auto_stats["removed"] += 1
                 else:
-                    if status == "Removed":
-                        auto_stats["removed"] += 1
-                    else:
-                        auto_stats["failed"] += 1
-                auto_stats["done"] += 1
+                    auto_stats["failed"] += 1
+                    print(f"⚠️ Failed to send file to {user_id}")
 
-            # ⏱️ round completed, prepare stats
+            # Round completed: send stats to admin
             time_taken = datetime.timedelta(seconds=int(time.time() - auto_stats["start_time"]))
             stats_msg = (
                 f"📊 <b>Auto Broadcast Round Completed</b>\n\n"
@@ -177,15 +172,12 @@ async def auto_broadcast(bot):
                 f"⚠️ Failed: {auto_stats['failed']}\n"
                 f"⏱️ Time Taken: {time_taken}"
             )
-
-            # send stats to admin
             try:
                 await bot.send_message(ADMINS[0], stats_msg)
             except:
                 print("⚠️ Could not send stats to admin.")
 
-            # wait 30 minutes before next round
-            await asyncio.sleep(1800)
+            await asyncio.sleep(1800)  # wait 30 minutes
 
         except asyncio.CancelledError:
             break
@@ -193,16 +185,13 @@ async def auto_broadcast(bot):
             print(f"🔥 Auto broadcast error: {e}")
             await asyncio.sleep(60)
 
-
-# 📌 Manual broadcast command
+# ---------------- Commands ----------------
 @Client.on_message(filters.command("broadcast") & filters.user(ADMINS) & filters.reply)
 async def broadcast_cmd(bot, message):
     b_msg = message.reply_to_message
     sts = await message.reply_text("🚀 Broadcasting started...")
     await start_broadcast(bot, b_msg, sts)
 
-
-# 📌 Start auto broadcast
 @Client.on_message(filters.command(["autobroadcast", "v"]) & filters.user(ADMINS))
 async def start_auto_cmd(bot, message):
     global auto_broadcast_running, auto_broadcast_task
@@ -213,8 +202,6 @@ async def start_auto_cmd(bot, message):
     auto_broadcast_task = asyncio.create_task(auto_broadcast(bot))
     await message.reply_text("✅ Auto broadcast started! Sending every 30 minutes.")
 
-
-# 📌 Stop auto broadcast
 @Client.on_message(filters.command("stopbroadcast") & filters.user(ADMINS))
 async def stop_auto_cmd(bot, message):
     global auto_broadcast_running, auto_broadcast_task
@@ -228,8 +215,6 @@ async def stop_auto_cmd(bot, message):
 
     await message.reply_text("🛑 Auto broadcast stopped successfully.")
 
-
-# 📌 Show live stats
 @Client.on_message(filters.command("autostats") & filters.user(ADMINS))
 async def show_auto_stats(bot, message):
     global auto_broadcast_running, auto_stats
