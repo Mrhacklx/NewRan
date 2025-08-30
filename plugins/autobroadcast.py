@@ -1,7 +1,7 @@
 import asyncio
 from db_file import db
 from pyrogram import Client
-from config import API_ID, API_HASH, BOT_TOKEN
+from config import API_ID, API_HASH, BOT_TOKEN, IMAGE_PATH 
 
 app = Client("broadcast-bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
@@ -33,8 +33,16 @@ async def send_files_to_user(user_id: int):
 
             # send file
             try:
-                await app.send_message(user_id, f"📂 Here is your file: {next_file}")
-
+                username = (await bot.get_me()).username
+                link = f"https://t.me/{username}?start={next_file}"
+                caption = f"<b>⭕ New File:\n\n🔗 ʟɪɴᴋ :- {link}</b>"
+                
+                await app.send_photo(
+                    chat_id=user_id,
+                    photo=IMAGE_PATH,   # You can also use InputFile for local images
+                    caption=caption,
+                    parse_mode="html"
+                )
                 # mark file as sent
                 await db.add_file(user_id, next_file)
 
