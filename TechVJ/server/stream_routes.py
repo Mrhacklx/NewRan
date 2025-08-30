@@ -79,7 +79,7 @@ async def list_files(request):
     html = f"""
     <html>
       <head>
-        <title>Premium Files</title>
+        <title>⭕ Premium Video</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
           body {{
@@ -157,7 +157,7 @@ async def list_files(request):
         </style>
       </head>
       <body>
-        <div class="header">🔥 Latest Releases</div>
+        <div class="header">🔥 Latest Videos</div>
         <div class="grid" id="file-grid"></div>
         <button class="btn" onclick="loadMore()">Load More</button>
 
