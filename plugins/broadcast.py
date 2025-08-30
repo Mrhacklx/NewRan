@@ -32,8 +32,9 @@ async def send_file_to_user(user_id: int, file_id: str, bot: Client):
                 chat_id=user_id,
                 photo=IMAGE_PATH,
                 caption=caption,
-                parse_mode="html"
+                parse_mode=ParseMode.HTML   # ✅ Correct way in Pyrogram v2
             )
+
 
             # log the file in user's file list
             await db.safe_add_file_to_user(user_id, file_id)
