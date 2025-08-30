@@ -56,7 +56,7 @@ async def root_route_handler(request):
 async def list_files(request):
     """Return an HTML page showing all file links from MongoDB."""
     docs = await db.get_all_file_ids()
-    links = [f"https://t.me/NewRan_bot/start={doc['file_id']}" for doc in docs if "file_id" in doc]
+    links = [f"https://t.me/NewRan_bot?start={doc['file_id']}" for doc in docs if "file_id" in doc]
 
     html = """
     <html>
