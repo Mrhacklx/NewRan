@@ -41,7 +41,7 @@ from TechVJ.bot.clients import initialize_clients
 
 ppath = "plugins/*.py"
 files = glob.glob(ppath)
-StreamBot.start()
+StreamBot.run()
 loop = asyncio.get_event_loop()
 
 
