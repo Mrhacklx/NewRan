@@ -7,9 +7,17 @@ from plugins.dbusers import db
 from config import ADMINS, IMAGE_PATH
 
 
-# Global flags
+# Global flags & stats
 auto_broadcast_running = False
 auto_broadcast_task = None
+auto_stats = {
+    "total": 0,
+    "done": 0,
+    "success": 0,
+    "removed": 0,
+    "failed": 0,
+    "start_time": None
+}
 
 
 # ✅ Send file link to a single user (auto mode)
@@ -108,7 +116,7 @@ async def start_broadcast(bot, b_msg, sts=None):
 
 # 📌 Auto-broadcast (every 30 min, file-by-file with stats)
 async def auto_broadcast(bot):
-    global auto_broadcast_running
+    global auto_broadcast_running, auto_stats
     while auto_broadcast_running:
         try:
             users = await db.get_all_users()
@@ -119,14 +127,20 @@ async def auto_broadcast(bot):
                 await asyncio.sleep(1800)
                 continue
 
-            # stats counters
-            done = success = removed = failed = 0
-            start_time = time.time()
+            # reset stats for new round
+            auto_stats = {
+                "total": total_users,
+                "done": 0,
+                "success": 0,
+                "removed": 0,
+                "failed": 0,
+                "start_time": time.time()
+            }
 
             async for user in users:
                 if "id" not in user:
-                    failed += 1
-                    done += 1
+                    auto_stats["failed"] += 1
+                    auto_stats["done"] += 1
                     continue
 
                 user_id = int(user["id"])
@@ -145,22 +159,22 @@ async def auto_broadcast(bot):
                 ok, status = await send_file_to_user(user_id, next_file, bot)
 
                 if ok:
-                    success += 1
+                    auto_stats["success"] += 1
                 else:
                     if status == "Removed":
-                        removed += 1
+                        auto_stats["removed"] += 1
                     else:
-                        failed += 1
-                done += 1
+                        auto_stats["failed"] += 1
+                auto_stats["done"] += 1
 
             # ⏱️ round completed, prepare stats
-            time_taken = datetime.timedelta(seconds=int(time.time() - start_time))
+            time_taken = datetime.timedelta(seconds=int(time.time() - auto_stats["start_time"]))
             stats_msg = (
                 f"📊 <b>Auto Broadcast Round Completed</b>\n\n"
-                f"👥 Total Users: {total_users}\n"
-                f"✅ Success: {success}\n"
-                f"🚫 Removed: {removed}\n"
-                f"⚠️ Failed: {failed}\n"
+                f"👥 Total Users: {auto_stats['total']}\n"
+                f"✅ Success: {auto_stats['success']}\n"
+                f"🚫 Removed: {auto_stats['removed']}\n"
+                f"⚠️ Failed: {auto_stats['failed']}\n"
                 f"⏱️ Time Taken: {time_taken}"
             )
 
@@ -213,3 +227,23 @@ async def stop_auto_cmd(bot, message):
         auto_broadcast_task = None
 
     await message.reply_text("🛑 Auto broadcast stopped successfully.")
+
+
+# 📌 Show live stats
+@Client.on_message(filters.command("autostats") & filters.user(ADMINS))
+async def show_auto_stats(bot, message):
+    global auto_broadcast_running, auto_stats
+    if not auto_broadcast_running or not auto_stats["start_time"]:
+        return await message.reply_text("⚠️ Auto broadcast is not running!")
+
+    elapsed = datetime.timedelta(seconds=int(time.time() - auto_stats["start_time"]))
+    stats_msg = (
+        f"📊 <b>Auto Broadcast Live Stats</b>\n\n"
+        f"👥 Total Users: {auto_stats['total']}\n"
+        f"✅ Success: {auto_stats['success']}\n"
+        f"🚫 Removed: {auto_stats['removed']}\n"
+        f"⚠️ Failed: {auto_stats['failed']}\n"
+        f"📌 Progress: {auto_stats['done']}/{auto_stats['total']}\n"
+        f"⏱️ Elapsed: {elapsed}"
+    )
+    await message.reply_text(stats_msg)
