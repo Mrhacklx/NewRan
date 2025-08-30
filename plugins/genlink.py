@@ -33,7 +33,7 @@ async def incoming_gen_link(bot, message):
         share_link = f"{WEBSITE_URL}?Tech_VJ={outstr}"
     else:
         share_link = f"https://t.me/{username}?start={outstr}"
-        await db.store_file_id(share_link)
+        await db.store_file_id(outstr)
 
     if user["base_site"] and user["shortener_api"] != None:
         short_link = await get_short_link(user, share_link)
@@ -159,6 +159,7 @@ async def gen_link_batch(bot, message):
     else:
         await sts.edit(f"<b>⭕ ʜᴇʀᴇ ɪs ʏᴏᴜʀ ʟɪɴᴋ:\n\nContains `{og_msg}` files.\n\n🔗 ᴏʀɪɢɪɴᴀʟ ʟɪɴᴋ :- {share_link}</b>")
         
+
 
 
 
