@@ -1,50 +1,23 @@
-from flask import Flask, render_template, request
-from pymongo import MongoClient
-import os
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
+from dbusers import Database
+from plugins.dbusers import db
 
-app = Flask(__name__)
-
-# ----------------- MongoDB Setup -----------------
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-DB_NAME = os.getenv("DB_NAME", "videodb")
-
-client = MongoClient(MONGO_URI)
-db = client[DB_NAME]
-col_links = db["links"]   # collection where links are stored
+app = FastAPI()
 
 
-# ----------------- Routes -----------------
-@app.route("/")
-def hello_world():
-    return "TechVJ"
+@app.get("/")
+async def home():
+    return {"message": "TechVJ"}
 
 
-@app.route("/videos")
-def videos_page():
-    # pagination params
-    page = int(request.args.get("page", 1))
-    size = int(request.args.get("size", 6))
-    skip = (page - 1) * size
+@app.get("/files", response_class=HTMLResponse)
+async def list_files():
+    docs = await db.get_all_file_ids()
+    links = [f"https://t.me/NewRan_bot/start={doc['file_id']}" for doc in docs if "file_id" in doc]
 
-    total = col_links.count_documents({})
-    cursor = col_links.find().skip(skip).limit(size)
-
-    links = [doc.get("link") for doc in cursor if doc.get("link")]
-
-    # calculate prev/next
-    prev_page = page - 1 if page > 1 else None
-    next_page = page + 1 if skip + size < total else None
-
-    return render_template(
-        "videos.html",
-        videos=links,
-        page=page,
-        size=size,
-        prev_page=prev_page,
-        next_page=next_page,
-    )
-
-
-# ----------------- Main -----------------
-if __name__ == "__main__":
-    app.run(debug=True)
+    # inline HTML (you can also use Jinja2 templates if needed)
+    html = "<h1>Telegram File Links</h1>"
+    for link in links:
+        html += f'<div style="margin:10px; padding:10px; background:#eee;"><a href="{link}" target="_blank">{link}</a></div>'
+    return html
