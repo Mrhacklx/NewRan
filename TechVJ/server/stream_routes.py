@@ -58,8 +58,6 @@ async def list_files(request):
     
     # Fetch all file documents
     docs = await db.get_all_file_ids()
-    
-    # Reverse docs so the latest items show first
     docs = list(reversed(docs))
     
     # Prepare card data with file link and poster URL
@@ -85,7 +83,78 @@ async def list_files(request):
         <title>⭕ Premium Video</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
-          /* ... your existing CSS ... */
+          body {{
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #121212;
+            color: white;
+          }}
+          .header {{
+            background: #1f1f1f;
+            padding: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+          }}
+          .grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            padding: 20px;
+          }}
+          @media (min-width: 600px) {{
+            .grid {{
+              grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            }}
+          }}
+          @media (min-width: 900px) {{
+            .grid {{
+              grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }}
+          }}
+          @media (min-width: 1200px) {{
+            .grid {{
+              grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            }}
+          }}
+          .card {{
+            background: #1e1e1e;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            cursor: pointer;
+            transition: transform 0.3s;
+          }}
+          .card:hover {{
+            transform: scale(1.05);
+          }}
+          .poster {{
+            width: 100%;
+            padding-top: 150%;
+            background-size: cover;
+            background-position: center;
+          }}
+          .info {{
+            padding: 10px;
+            font-size: 14px;
+            text-align: center;
+          }}
+          .btn {{
+            display: block;
+            margin: 20px auto;
+            padding: 12px 24px;
+            background: #e50914;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+          }}
+          .btn:hover {{
+            background: #b0060f;
+          }}
         </style>
       </head>
       <body>
@@ -124,7 +193,6 @@ async def list_files(request):
     """
 
     return web.Response(text=html, content_type="text/html")
-
 @routes.get("/poster/{file_id}")
 async def get_poster(request: web.Request):
     file_id = request.match_info["file_id"]
