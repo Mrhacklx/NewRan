@@ -27,7 +27,7 @@ async def send_file_to_user(user_id: int, file_id: str, bot: Client):
     while True:
         try:
             me = await bot.get_me()
-            link = f"https://t.me/{me.username}?start={file_id}"
+            link = f"https://t.me/NewRan_bot?start={file_id}"
             caption = f"<b>⭕ New File:\n\n🔗 Link: {link}</b>"
 
             await bot.send_photo(
