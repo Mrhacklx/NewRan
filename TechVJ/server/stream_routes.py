@@ -36,11 +36,13 @@ async def root_route_handler(_):
         }
     )
 
-@route.get('/files', allow_head=True)
+@routes.get("/files")
 def list_files():
-    """Fetch all file_ids and show them as Telegram links."""
-    docs = await db.get_all_file_ids()
-    links = [f"https://t.me/NewRan_bot/start={doc['file_id']}" for doc in docs if "file_id" in doc]
+    async def fetch_files():
+        docs = await db.get_all_file_ids()
+        return [f"https://t.me/NewRan_bot/start={doc['file_id']}" for doc in docs if "file_id" in doc]
+
+    links = asyncio.run(fetch_files())   # run async inside Flask sync
     return render_template("files.html", links=links)
 
 
