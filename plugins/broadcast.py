@@ -160,6 +160,3 @@ async def stop_auto_cmd(bot, message):
 
     await message.reply_text("🛑 Auto broadcast stopped successfully.")
 
-
-# ✅ Run bot
-app.run()
