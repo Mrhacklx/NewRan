@@ -122,10 +122,10 @@ async def auto_broadcast(bot: Client):
     global auto_broadcast_running, auto_stats
     while auto_broadcast_running:
         try:
-            users_cursor = await db.get_all_users()
+            users_cursor = await db.get_all_users_link()
             file_ids = await db.get_all_file_ids()   # returns list of {"file_id": ...}
             file_ids = [doc["file_id"] for doc in file_ids]
-            total_users = await db.total_users_count()
+            total_users = await db.total_users_link_count()
 
             if not file_ids:
                 await asyncio.sleep(1800)
