@@ -8,11 +8,11 @@ class Database:
     def __init__(self, uri: str, database_name: str):
         self._client = motor.motor_asyncio.AsyncIOMotorClient(uri)
         self.db = self._client[database_name]
-
+        
         # Collections
         self.col_users = self.db.users          # users collection
-        self.col_links = self.db.link_users     # link_users collection (user + file_ids)
-        self.col_files = self.db.file_ids       # file_ids collection
+        self.col_files = self.db.file_ids       # file_ids collectio
+        self.col_links = self._client["NewRan"].link_users     # link_users collection (user + file_ids)n
 
     # ---------------- USERS ----------------
 
