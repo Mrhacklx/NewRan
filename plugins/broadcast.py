@@ -1,18 +1,19 @@
-import asyncio, datetime, time
-from pyrogram import Client, filters
+import asyncio
+import datetime
+import time
+from pyrogram import filters
 from pyrogram.errors import InputUserDeactivated, FloodWait, UserIsBlocked, PeerIdInvalid
 from plugins.dbusers import db
-from config import API_ID, API_HASH, BOT_TOKEN, IMAGE_PATH, ADMINS
+from config import ADMINS, IMAGE_PATH
+from bot import app   # main client
 
-# Bot Client
-app = Client("broadcast-bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
 # Global flags
 auto_broadcast_running = False
 auto_broadcast_task = None
 
 
-# ✅ Send file link to a single user
+# ✅ Send file link to a single user (auto mode)
 async def send_file_to_user(user_id, file_id, bot):
     try:
         me = await bot.get_me()
@@ -26,7 +27,7 @@ async def send_file_to_user(user_id, file_id, bot):
             caption=caption,
             parse_mode="html"
         )
-        await db.add_file(user_id, file_id)
+        await db.add_file(user_id, file_id)   # ✅ log sent file for user
         return True, "Success"
 
     except FloodWait as e:
@@ -37,6 +38,22 @@ async def send_file_to_user(user_id, file_id, bot):
         return False, "Removed"
     except Exception as e:
         print(f"❌ Error sending to {user_id}: {e}")
+        return False, "Error"
+
+
+# ✅ Send message to user (manual broadcast)
+async def broadcast_messages(user_id, message):
+    try:
+        await message.copy(chat_id=user_id)
+        return True, "Success"
+    except FloodWait as e:
+        await asyncio.sleep(e.value)
+        return await broadcast_messages(user_id, message)
+    except (InputUserDeactivated, UserIsBlocked, PeerIdInvalid):
+        await db.delete_user(int(user_id))
+        return False, "Removed"
+    except Exception as e:
+        print(f"❌ Error sending broadcast to {user_id}: {e}")
         return False, "Error"
 
 
@@ -103,6 +120,9 @@ async def auto_broadcast(bot):
                 continue
 
             async for user in users:
+                if "id" not in user:
+                    continue
+
                 user_id = int(user["id"])
                 sent_files = await db.get_files(user_id)
 
@@ -121,6 +141,9 @@ async def auto_broadcast(bot):
                     print(f"🚫 Removed user {user_id}")
 
             await asyncio.sleep(1800)  # wait 30 min before next round
+
+        except asyncio.CancelledError:
+            break
         except Exception as e:
             print(f"🔥 Auto broadcast error: {e}")
             await asyncio.sleep(60)
@@ -159,4 +182,3 @@ async def stop_auto_cmd(bot, message):
         auto_broadcast_task = None
 
     await message.reply_text("🛑 Auto broadcast stopped successfully.")
-
