@@ -19,32 +19,75 @@ from config import MULTI_CLIENT
 routes = web.RouteTableDef()
 
 @routes.get("/", allow_head=True)
-async def root_route_handler(_):
-    return web.json_response(
-        {
-            "server_status": "running",
-            "uptime": get_readable_time(time.time() - StartTime),
-            "telegram_bot": "@" + StreamBot.username,
-            "connected_bots": len(multi_clients),
-            "loads": dict(
-                ("bot" + str(c + 1), l)
-                for c, (_, l) in enumerate(
-                    sorted(work_loads.items(), key=lambda x: x[1], reverse=True)
-                )
-            ),
-            "version": __version__,
-        }
-    )
+async def root_route_handler(request):
+    html = f"""
+    <html>
+      <head>
+        <title>NewRan Bot Status</title>
+        <style>
+          body {{ font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }}
+          .card {{ background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); max-width: 600px; margin: auto; }}
+          h2 {{ color: #333; }}
+          ul {{ padding: 0; list-style: none; }}
+          li {{ padding: 4px 0; }}
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h2>🚀 Bot Server Status</h2>
+          <p><b>Status:</b> running</p>
+          <p><b>Uptime:</b> {get_readable_time(time.time() - StartTime)}</p>
+          <p><b>Telegram Bot:</b> @{StreamBot.username}</p>
+          <p><b>Connected Bots:</b> {len(multi_clients)}</p>
+          <p><b>Version:</b> {__version__}</p>
+          <h3>⚡ Workloads</h3>
+          <ul>
+            {"".join(f"<li>{'bot'+str(c+1)} → {l}</li>" for c, (_, l) in enumerate(sorted(work_loads.items(), key=lambda x: x[1], reverse=True)))}
+          </ul>
+        </div>
+      </body>
+    </html>
+    """
+    return web.Response(text=html, content_type="text/html")
+
+
 
 @routes.get("/files")
-def list_files():
-    async def fetch_files():
-        docs = await db.get_all_file_ids()
-        return [f"https://t.me/NewRan_bot/start={doc['file_id']}" for doc in docs if "file_id" in doc]
+async def list_files(request):
+    """Return an HTML page showing all file links from MongoDB."""
+    docs = await db.get_all_file_ids()
+    links = [f"https://t.me/NewRan_bot/start={doc['file_id']}" for doc in docs if "file_id" in doc]
 
-    links = asyncio.run(fetch_files())   # run async inside Flask sync
-    return render_template("files.html", links=links)
+    html = """
+    <html>
+      <head>
+        <title>Available Files</title>
+        <style>
+          body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+          .card { background: white; padding: 20px; border-radius: 10px;
+                  box-shadow: 0 2px 6px rgba(0,0,0,0.2); max-width: 700px; margin: auto; }
+          h2 { color: #333; }
+          ul { list-style: none; padding: 0; }
+          li { padding: 6px 0; }
+          a { text-decoration: none; color: #007bff; }
+          a:hover { text-decoration: underline; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h2>📂 File Links</h2>
+          <ul>
+    """
+    for link in links:
+        html += f'<li><a href="{link}" target="_blank">{link}</a></li>'
+    html += """
+          </ul>
+        </div>
+      </body>
+    </html>
+    """
 
+    return web.Response(text=html, content_type="text/html")
 
 
 @routes.get(r"/watch/{path:\S+}", allow_head=True)
