@@ -18,45 +18,88 @@ async def allowed(_, __, message):
     return False
     
 
+import base64
+import os
+import asyncio
+import ffmpeg
+from pyrogram import Client, filters
+from config import LOG_CHANNEL, WEBSITE_URL, WEBSITE_URL_MODE
+from plugins.dbusers import db
+from plugins.shortener import get_short_link
+from plugins.users import get_user
+
+
+# 📌 helper: extract thumbnail from video
+async def extract_thumbnail(video_path, output_path):
+    try:
+        (
+            ffmpeg
+            .input(video_path, ss=1)  # take snapshot at 1 second
+            .filter('scale', 320, -1) # resize width=320px keep aspect ratio
+            .output(output_path, vframes=1)
+            .overwrite_output()
+            .run(quiet=True)
+        )
+        return output_path
+    except Exception as e:
+        print("Thumbnail error:", e)
+        return None
+
+
 @Client.on_message((filters.document | filters.video | filters.audio | filters.photo) & filters.private)
 async def incoming_gen_link(bot, message):
-    # Get bot username
     username = (await bot.get_me()).username
 
-    # ✅ Copy the file to LOG_CHANNEL
+    # ✅ Copy to log channel
     post = await message.copy(LOG_CHANNEL)
 
-    # ✅ Generate unique file key
+    # ✅ Encode file id
     file_id = str(post.id)
     string = 'file_' + file_id
     outstr = base64.urlsafe_b64encode(string.encode("ascii")).decode().strip("=")
 
-    # ✅ Store in DB
     user_id = message.from_user.id
     user = await get_user(user_id)
 
-    # if WEBSITE mode is enabled
+    # ✅ Generate link
     if WEBSITE_URL_MODE:
         share_link = f"{WEBSITE_URL}?Tech_VJ={outstr}"
     else:
         share_link = f"https://t.me/{username}?start={outstr}"
 
-    # ✅ store file in DB with optional poster (thumb image link)
-    imglink = IMAGE_PATH   # you can set poster dynamically also
-    await db.store_file_id(outstr, imglink)
+    thumb_file_id = None
 
-    # ✅ Shortener if user has API
+    # ✅ If video, extract thumbnail
+    if message.video:
+        temp_path = await message.download()  # download video temporarily
+        thumb_path = f"{temp_path}.jpg"
+
+        # extract first frame
+        await asyncio.to_thread(extract_thumbnail, temp_path, thumb_path)
+
+        if os.path.exists(thumb_path):
+            # upload thumbnail to Telegram to get file_id
+            sent = await bot.send_photo(LOG_CHANNEL, photo=thumb_path)
+            thumb_file_id = sent.photo.file_id
+            os.remove(thumb_path)
+        os.remove(temp_path)
+
+    # ✅ Store in DB
+    await db.store_file_id(outstr, thumb_file_id)
+
+    # ✅ Prepare caption
     if user and user.get("base_site") and user.get("shortener_api") is not None:
         short_link = await get_short_link(user, share_link)
         caption = f"<b>⭕ ʜᴇʀᴇ ɪs ʏᴏᴜʀ ʟɪɴᴋ:\n\n🖇️ sʜᴏʀᴛ ʟɪɴᴋ :- {short_link}</b>"
     else:
         caption = f"<b>⭕ New File:\n\n🔗 ʟɪɴᴋ :- {share_link}</b>"
 
-    # ✅ Reply with IMAGE + Caption
-    await message.reply_photo(
-        photo=IMAGE_PATH,
-        caption=caption
-    )
+    # ✅ Reply to user with extracted thumbnail (if exists)
+    if thumb_file_id:
+        await message.reply_photo(photo=thumb_file_id, caption=caption)
+    else:
+        await message.reply_text(caption)
+
 
 
 @Client.on_message(filters.command(['link']) & filters.create(allowed))
@@ -173,6 +216,7 @@ async def gen_link_batch(bot, message):
     else:
         await sts.edit(f"<b>⭕ ʜᴇʀᴇ ɪs ʏᴏᴜʀ ʟɪɴᴋ:\n\nContains `{og_msg}` files.\n\n🔗 ᴏʀɪɢɪɴᴀʟ ʟɪɴᴋ :- {share_link}</b>")
         
+
 
 
 
