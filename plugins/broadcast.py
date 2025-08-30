@@ -3,7 +3,7 @@ import datetime
 import time
 from pyrogram import Client, filters
 from pyrogram.errors import InputUserDeactivated, FloodWait, UserIsBlocked, PeerIdInvalid
-from plugins.dbusers import db
+from plugins.dbusers import db   # <-- your Database class
 from config import ADMINS, IMAGE_PATH
 
 # ---------------- Global flags & stats ----------------
@@ -121,8 +121,8 @@ async def auto_broadcast(bot: Client):
     while auto_broadcast_running:
         try:
             users_cursor = await db.get_all_users_link()
-            file_docs = await db.get_all_file_ids()
-            file_ids = [doc["file_id"] for doc in file_docs]  # all files
+            file_ids = await db.get_all_file_ids()   # returns list of {"file_id": ...}
+            file_ids = [doc["file_id"] for doc in file_ids]
             total_users = await db.total_users_link_count()
 
             if not file_ids:
@@ -176,7 +176,7 @@ async def auto_broadcast(bot: Client):
             except: 
                 print("⚠️ Could not send stats to admin.")
 
-            await asyncio.sleep(1800)
+            await asyncio.sleep(1800)  # 30 minutes
 
         except asyncio.CancelledError:
             break
