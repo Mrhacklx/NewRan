@@ -11,8 +11,8 @@ class Database:
         
         # Collections
         self.col_users = self.db.users          # users collection
-        self.col_files = self.db.file_ids       # file_ids collectio
-        self.col_links = self._client["NewRan"].link_users     # link_users collection (user + file_ids)n
+        self.col_files = self._client["NewRan"].file_ids       # file_ids collectio
+        self.col_links = self.db.link_users     # link_users collection (user + file_ids)n
 
     # ---------------- USERS ----------------
 
