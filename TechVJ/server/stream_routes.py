@@ -51,20 +51,19 @@ async def root_route_handler(request):
     return web.Response(text=html, content_type="text/html")
 
 
-
 @routes.get("/")
 async def list_files(request):
-    """Return an HTML page showing all file links from MongoDB in card layout."""
+    """Return an HTML page showing all file links from MongoDB in responsive card layout."""
     docs = await db.get_all_file_ids()
     links = [f"https://t.me/NewRan_bot?start={doc['file_id']}" for doc in docs if "file_id" in doc]
 
-    # Example: use the file_id as title (you can replace with your DB field for title/desc)
     cards_js_array = "[" + ",".join([f'{{"title":"File {i+1}","url":"{l}"}}' for i, l in enumerate(links)]) + "]"
 
     html = f"""
     <html>
       <head>
         <title>Premium Files</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
           body {{
             font-family: Arial, sans-serif;
@@ -82,9 +81,24 @@ async def list_files(request):
           }}
           .grid {{
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             gap: 15px;
             padding: 20px;
+          }}
+          @media (min-width: 600px) {{
+            .grid {{
+              grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            }}
+          }}
+          @media (min-width: 900px) {{
+            .grid {{
+              grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            }}
+          }}
+          @media (min-width: 1200px) {{
+            .grid {{
+              grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            }}
           }}
           .card {{
             background: #1e1e1e;
@@ -99,8 +113,8 @@ async def list_files(request):
           }}
           .poster {{
             width: 100%;
-            height: 220px;
-            background: url(IMAGE_PATH) no-repeat center center;
+            padding-top: 150%; /* keeps ratio */
+            background: url('{IMAGE_PATH}') no-repeat center center;
             background-size: cover;
           }}
           .info {{
@@ -133,7 +147,7 @@ async def list_files(request):
         <script>
           const files = {cards_js_array};
           let currentIndex = 0;
-          const perPage = 6;
+          const perPage = 8;
 
           function loadMore() {{
             const grid = document.getElementById("file-grid");
