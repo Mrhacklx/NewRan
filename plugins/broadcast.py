@@ -19,12 +19,13 @@ auto_stats = {
 }
 
 # ---------------- Send file link to a single user ----------------
-async def send_file_to_user(user_id, file_id, bot):
+async def send_file_to_user(user_id: int, file_id: str, bot: Client):
+    """Send a photo with a link to a user and log it."""
     try:
         me = await bot.get_me()
         username = me.username
         link = f"https://t.me/{username}?start={file_id}"
-        caption = f"<b>⭕ New File:\n\n🔗 ʟɪɴᴋ :- {link}</b>"
+        caption = f"<b>⭕ New File:\n\n🔗 Link: {link}</b>"
 
         await bot.send_photo(
             chat_id=user_id,
@@ -32,97 +33,101 @@ async def send_file_to_user(user_id, file_id, bot):
             caption=caption,
             parse_mode="html"
         )
-        await db.add_file(user_id, file_id)  # log sent file
+
+        # log the file in user's file list
+        await db.safe_add_file_to_user(user_id, file_id)
         return True, "Success"
 
     except FloodWait as e:
         await asyncio.sleep(e.value)
         return await send_file_to_user(user_id, file_id, bot)
     except (InputUserDeactivated, UserIsBlocked, PeerIdInvalid):
-        await db.delete_user(int(user_id))
+        await db.delete_user(user_id)
+        await db.delete_user_link(user_id)
         return False, "Removed"
     except Exception as e:
-        print(f"❌ Error sending to {user_id}: {e}")
+        print(f"❌ Error sending file to {user_id}: {e}")
         return False, "Error"
 
 # ---------------- Manual broadcast ----------------
-async def broadcast_messages(user_id, message):
+async def broadcast_message(user_id: int, message, bot: Client):
+    """Send a manual broadcast message to a user."""
     try:
         await message.copy(chat_id=user_id)
         return True, "Success"
     except FloodWait as e:
         await asyncio.sleep(e.value)
-        return await broadcast_messages(user_id, message)
+        return await broadcast_message(user_id, message, bot)
     except (InputUserDeactivated, UserIsBlocked, PeerIdInvalid):
-        await db.delete_user(int(user_id))
+        await db.delete_user(user_id)
         return False, "Removed"
     except Exception as e:
-        print(f"❌ Error sending broadcast to {user_id}: {e}")
+        print(f"❌ Error broadcasting to {user_id}: {e}")
         return False, "Error"
 
-async def start_broadcast(bot, b_msg, sts=None):
-    users = await db.get_all_users()
+async def start_manual_broadcast(bot: Client, b_msg, sts=None):
+    """Broadcast a message to all users in users collection."""
+    users_cursor = await db.get_all_users()
     total_users = await db.total_users_count()
 
     start_time = time.time()
     done = success = removed = failed = 0
 
-    async for user in users:
+    async for user in users_cursor:
         if "id" not in user:
             failed += 1
             done += 1
             continue
 
-        pti, status = await broadcast_messages(int(user["id"]), b_msg)
-
-        if pti:
-            success += 1
-        else:
-            if status == "Removed":
-                removed += 1
-            else:
-                failed += 1
+        ok, status = await broadcast_message(user["id"], b_msg, bot)
         done += 1
 
-        if sts and not done % 20:
+        if ok:
+            success += 1
+        elif status == "Removed":
+            removed += 1
+        else:
+            failed += 1
+
+        # update progress every 20 users
+        if sts and done % 20 == 0:
             try:
                 await sts.edit(
-                    f"📢 Broadcast in progress:\n\n"
+                    f"📢 Broadcasting...\n"
                     f"👥 Total: {total_users}\n"
                     f"✅ Success: {success}\n"
                     f"🚫 Removed: {removed}\n"
                     f"⚠️ Failed: {failed}\n"
                     f"Progress: {done}/{total_users}"
                 )
-            except:
-                pass
+            except: pass
 
-    time_taken = datetime.timedelta(seconds=int(time.time() - start_time))
+    elapsed = datetime.timedelta(seconds=int(time.time() - start_time))
     if sts:
         await sts.edit(
-            f"✅ Broadcast Completed in {time_taken}.\n\n"
+            f"✅ Broadcast Completed in {elapsed}.\n\n"
             f"👥 Total: {total_users}\n"
             f"✅ Success: {success}\n"
             f"🚫 Removed: {removed}\n"
             f"⚠️ Failed: {failed}"
         )
-    return {"total": total_users, "success": success, "removed": removed, "failed": failed, "time": str(time_taken)}
+    return {"total": total_users, "success": success, "removed": removed, "failed": failed, "time": str(elapsed)}
 
 # ---------------- Auto-broadcast ----------------
-async def auto_broadcast(bot):
+async def auto_broadcast(bot: Client):
     global auto_broadcast_running, auto_stats
     while auto_broadcast_running:
         try:
-            users = await db.get_all_users()
+            users_cursor = await db.get_all_users_link()
             file_docs = await db.get_all_file_ids()
-            file_ids = [doc["file_id"] for doc in file_docs]  # extract strings
-            total_users = await db.total_users_count()
+            file_ids = [doc["file_id"] for doc in file_docs]  # all files
+            total_users = await db.total_users_link_count()
 
             if not file_ids:
                 await asyncio.sleep(1800)
                 continue
 
-            # Reset stats for this round
+            # reset stats
             auto_stats = {
                 "total": total_users,
                 "done": 0,
@@ -132,22 +137,17 @@ async def auto_broadcast(bot):
                 "start_time": time.time()
             }
 
-            async for user in users:
-                if "id" not in user:
+            async for user in users_cursor:
+                if "user_id" not in user:
                     auto_stats["failed"] += 1
                     auto_stats["done"] += 1
                     continue
 
-                user_id = int(user["id"])
-                sent_files = await db.get_files(user_id)
+                user_id = user["user_id"]
+                sent_files = await db.get_files_of_user(user_id)
 
-                # find next file
-                next_file = None
-                for f in file_ids:
-                    if f not in sent_files:
-                        next_file = f
-                        break
-
+                # find next unsent file
+                next_file = next((f for f in file_ids if f not in sent_files), None)
                 if not next_file:
                     continue
 
@@ -162,20 +162,19 @@ async def auto_broadcast(bot):
                     auto_stats["failed"] += 1
                     print(f"⚠️ Failed to send file to {user_id}")
 
-            # Round completed: send stats to admin
-            time_taken = datetime.timedelta(seconds=int(time.time() - auto_stats["start_time"]))
+            # send stats to admin
+            elapsed = datetime.timedelta(seconds=int(time.time() - auto_stats["start_time"]))
             stats_msg = (
                 f"📊 <b>Auto Broadcast Round Completed</b>\n\n"
                 f"👥 Total Users: {auto_stats['total']}\n"
                 f"✅ Success: {auto_stats['success']}\n"
                 f"🚫 Removed: {auto_stats['removed']}\n"
                 f"⚠️ Failed: {auto_stats['failed']}\n"
-                f"⏱️ Time Taken: {time_taken}"
+                f"⏱️ Time Taken: {elapsed}"
             )
             try:
                 await bot.send_message(ADMINS[0], stats_msg)
-            except:
-                print("⚠️ Could not send stats to admin.")
+            except: print("⚠️ Could not send stats to admin.")
 
             await asyncio.sleep(1800)  # wait 30 minutes
 
@@ -190,7 +189,7 @@ async def auto_broadcast(bot):
 async def broadcast_cmd(bot, message):
     b_msg = message.reply_to_message
     sts = await message.reply_text("🚀 Broadcasting started...")
-    await start_broadcast(bot, b_msg, sts)
+    await start_manual_broadcast(bot, b_msg, sts)
 
 @Client.on_message(filters.command(["autobroadcast", "v"]) & filters.user(ADMINS))
 async def start_auto_cmd(bot, message):
