@@ -49,14 +49,14 @@ class Database:
     # ---------------- USER LINKS (user + file_ids) ----------------
 
 
-
-    def new_user_link(self, user_id: int, file_ids=None) -> dict:
-    if file_ids is None:
+    def new_user_link(self, user_id: int, file_ids=None):
+    if file_ids is None:  # ✅ Indented inside the function
         file_ids = []
     return {
-        "user_id": int(user_id),  # store as integer
+        "user_id": int(user_id),
         "file_ids": file_ids
     }
+
 
     async def add_user_link(self, user_id: int, file_ids=None):
         user_link = self.new_user_link(user_id, file_ids)
