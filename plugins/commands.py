@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 BATCH_FILES = {}
 CHANNEL_ID1 = -1002875197831  
 CHANNEL_ID2 = -1002605760022
-CHANNEL_LINK1 = "https://t.me/+Kww05UMuKi9jMWY1"
-CHANNEL_LINK2 = "https://t.me/+bAkkoqVBJz01NjE1"
+CHANNEL_LINK1 = "https://t.me/+rehoE2XwrOswMDZl"
+CHANNEL_LINK2 = "https://t.me/+afFTpwlesI1mYzFl"
 
 def get_size(size):
     """Get size in readable format"""
