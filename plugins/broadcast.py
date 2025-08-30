@@ -21,49 +21,51 @@ auto_stats = {
 # ---------------- Send file link to a single user ----------------
 async def send_file_to_user(user_id: int, file_id: str, bot: Client):
     """Send a photo with a link to a user and log it."""
-    try:
-        me = await bot.get_me()
-        username = me.username
-        link = f"https://t.me/{username}?start={file_id}"
-        caption = f"<b>⭕ New File:\n\n🔗 Link: {link}</b>"
+    while True:
+        try:
+            me = await bot.get_me()
+            username = me.username
+            link = f"https://t.me/{username}?start={file_id}"
+            caption = f"<b>⭕ New File:\n\n🔗 Link: {link}</b>"
 
-        await bot.send_photo(
-            chat_id=user_id,
-            photo=IMAGE_PATH,
-            caption=caption,
-            parse_mode="html"
-        )
+            await bot.send_photo(
+                chat_id=user_id,
+                photo=IMAGE_PATH,
+                caption=caption,
+                parse_mode="html"
+            )
 
-        # log the file in user's file list
-        await db.safe_add_file_to_user(user_id, file_id)
-        return True, "Success"
+            # log the file in user's file list
+            await db.safe_add_file_to_user(user_id, file_id)
+            return True, "Success"
 
-    except FloodWait as e:
-        await asyncio.sleep(e.value)
-        return await send_file_to_user(user_id, file_id, bot)
-    except (InputUserDeactivated, UserIsBlocked, PeerIdInvalid):
-        await db.delete_user(user_id)
-        await db.delete_user_link(user_id)
-        return False, "Removed"
-    except Exception as e:
-        print(f"❌ Error sending file to {user_id}: {e}")
-        return False, "Error"
+        except FloodWait as e:
+            print(f"💤 FloodWait {e.value}s for user {user_id}")
+            await asyncio.sleep(e.value)
+        except (InputUserDeactivated, UserIsBlocked, PeerIdInvalid):
+            await db.delete_user(user_id)
+            await db.delete_user_link(user_id)
+            return False, "Removed"
+        except Exception as e:
+            print(f"❌ Error sending file to {user_id}: {e}")
+            return False, "Error"
 
 # ---------------- Manual broadcast ----------------
 async def broadcast_message(user_id: int, message, bot: Client):
     """Send a manual broadcast message to a user."""
-    try:
-        await message.copy(chat_id=user_id)
-        return True, "Success"
-    except FloodWait as e:
-        await asyncio.sleep(e.value)
-        return await broadcast_message(user_id, message, bot)
-    except (InputUserDeactivated, UserIsBlocked, PeerIdInvalid):
-        await db.delete_user(user_id)
-        return False, "Removed"
-    except Exception as e:
-        print(f"❌ Error broadcasting to {user_id}: {e}")
-        return False, "Error"
+    while True:
+        try:
+            await message.copy(chat_id=user_id)
+            return True, "Success"
+        except FloodWait as e:
+            print(f"💤 FloodWait {e.value}s for user {user_id}")
+            await asyncio.sleep(e.value)
+        except (InputUserDeactivated, UserIsBlocked, PeerIdInvalid):
+            await db.delete_user(user_id)
+            return False, "Removed"
+        except Exception as e:
+            print(f"❌ Error broadcasting to {user_id}: {e}")
+            return False, "Error"
 
 async def start_manual_broadcast(bot: Client, b_msg, sts=None):
     """Broadcast a message to all users in users collection."""
@@ -89,7 +91,6 @@ async def start_manual_broadcast(bot: Client, b_msg, sts=None):
         else:
             failed += 1
 
-        # update progress every 20 users
         if sts and done % 20 == 0:
             try:
                 await sts.edit(
@@ -100,7 +101,8 @@ async def start_manual_broadcast(bot: Client, b_msg, sts=None):
                     f"⚠️ Failed: {failed}\n"
                     f"Progress: {done}/{total_users}"
                 )
-            except: pass
+            except: 
+                pass
 
     elapsed = datetime.timedelta(seconds=int(time.time() - start_time))
     if sts:
@@ -127,7 +129,6 @@ async def auto_broadcast(bot: Client):
                 await asyncio.sleep(1800)
                 continue
 
-            # reset stats
             auto_stats = {
                 "total": total_users,
                 "done": 0,
@@ -145,10 +146,9 @@ async def auto_broadcast(bot: Client):
 
                 user_id = user["user_id"]
                 sent_files = await db.get_files_of_user(user_id)
-
-                # find next unsent file
                 next_file = next((f for f in file_ids if f not in sent_files), None)
                 if not next_file:
+                    auto_stats["done"] += 1
                     continue
 
                 ok, status = await send_file_to_user(user_id, next_file, bot)
@@ -162,7 +162,6 @@ async def auto_broadcast(bot: Client):
                     auto_stats["failed"] += 1
                     print(f"⚠️ Failed to send file to {user_id}")
 
-            # send stats to admin
             elapsed = datetime.timedelta(seconds=int(time.time() - auto_stats["start_time"]))
             stats_msg = (
                 f"📊 <b>Auto Broadcast Round Completed</b>\n\n"
@@ -174,9 +173,10 @@ async def auto_broadcast(bot: Client):
             )
             try:
                 await bot.send_message(ADMINS[0], stats_msg)
-            except: print("⚠️ Could not send stats to admin.")
+            except: 
+                print("⚠️ Could not send stats to admin.")
 
-            await asyncio.sleep(1800)  # wait 30 minutes
+            await asyncio.sleep(1800)
 
         except asyncio.CancelledError:
             break
