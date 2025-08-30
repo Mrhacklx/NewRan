@@ -106,20 +106,27 @@ async def start_broadcast(bot, b_msg, sts=None):
     return {"total": total_users, "success": success, "removed": removed, "failed": failed, "time": str(time_taken)}
 
 
-# 📌 Auto-broadcast (every 30 min, file-by-file)
+# 📌 Auto-broadcast (every 30 min, file-by-file with stats)
 async def auto_broadcast(bot):
     global auto_broadcast_running
     while auto_broadcast_running:
         try:
             users = await db.get_all_users()
             file_ids = await db.get_all_file_ids()
+            total_users = await db.total_users_count()
 
             if not file_ids:
                 await asyncio.sleep(1800)
                 continue
 
+            # stats counters
+            done = success = removed = failed = 0
+            start_time = time.time()
+
             async for user in users:
                 if "id" not in user:
+                    failed += 1
+                    done += 1
                     continue
 
                 user_id = int(user["id"])
@@ -133,13 +140,38 @@ async def auto_broadcast(bot):
                         break
 
                 if not next_file:
-                    continue  # all sent
+                    continue  # all files already sent to this user
 
-                success, status = await send_file_to_user(user_id, next_file, bot)
-                if not success and status == "Removed":
-                    print(f"🚫 Removed user {user_id}")
+                ok, status = await send_file_to_user(user_id, next_file, bot)
 
-            await asyncio.sleep(10)  # wait 30 min before next round
+                if ok:
+                    success += 1
+                else:
+                    if status == "Removed":
+                        removed += 1
+                    else:
+                        failed += 1
+                done += 1
+
+            # ⏱️ round completed, prepare stats
+            time_taken = datetime.timedelta(seconds=int(time.time() - start_time))
+            stats_msg = (
+                f"📊 <b>Auto Broadcast Round Completed</b>\n\n"
+                f"👥 Total Users: {total_users}\n"
+                f"✅ Success: {success}\n"
+                f"🚫 Removed: {removed}\n"
+                f"⚠️ Failed: {failed}\n"
+                f"⏱️ Time Taken: {time_taken}"
+            )
+
+            # send stats to admin
+            try:
+                await bot.send_message(ADMINS[0], stats_msg)
+            except:
+                print("⚠️ Could not send stats to admin.")
+
+            # wait 30 minutes before next round
+            await asyncio.sleep(1800)
 
         except asyncio.CancelledError:
             break
