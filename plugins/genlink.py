@@ -9,6 +9,7 @@ import os
 import json
 import base64
 
+
 async def allowed(_, __, message):
     if PUBLIC_FILE_STORE:
         return True
@@ -17,15 +18,13 @@ async def allowed(_, __, message):
     return False
 
 
-import base64
-from pyrogram import Client, filters
 
 # Your other imports...
 # from plugins.dbusers import db
 # from config import LOG_CHANNEL, IMAGE_PATH, WEBSITE_URL, WEBSITE_URL_MODE
 # from utils import get_user, get_short_link
 
-@Client.on_message((filters.document | filters.video | filters.audio | filters.photo) & filters.private & filters.create(allowed))
+@Client.on_message((filters.document | filters.video | filters.photo) & filters.private & filters.create(allowed))
 async def incoming_gen_link(bot, message):
     username = (await bot.get_me()).username
     post = await message.copy(LOG_CHANNEL)
@@ -186,6 +185,7 @@ async def gen_link_batch(bot, message):
     else:
         await sts.edit(f"<b>⭕ ʜᴇʀᴇ ɪs ʏᴏᴜʀ ʟɪɴᴋ:\n\nContains `{og_msg}` files.\n\n🔗 ᴏʀɪɢɪɴᴀʟ ʟɪɴᴋ :- {share_link}</b>")
         
+
 
 
 
