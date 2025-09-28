@@ -53,7 +53,6 @@ async def root_route_handler(request):
     return web.Response(text=html, content_type="text/html")
 
 
-
 @routes.get("/")
 async def list_files(request):
     """Return an HTML page showing all file links from MongoDB in responsive card layout."""
@@ -62,8 +61,8 @@ async def list_files(request):
     docs = await db.get_all_file_ids()
     docs = list(reversed(docs))
 
-    # Fixed poster image for all cards
-    fixed_poster_url = IMAGE_PATH
+    # Fixed poster image for all cards - using external URL with fallback
+    fixed_poster_url = "https://www.wallpaperflare.com/static/423/626/411/angel-beats-girl-hair-pink-wallpaper.jpg"
 
     # Prepare card data with file link
     files_data = []
@@ -269,8 +268,15 @@ async def list_files(request):
             background-size: cover;
             background-position: center;
             background-color: #333;
+            background-repeat: no-repeat;
             position: relative;
             overflow: hidden;
+            /* Add fallback for failed image loads */
+            background-image: linear-gradient(135deg, #e50914 0%, #b0060f 100%);
+          }}
+
+          .poster.loaded {{
+            background-image: var(--poster-url);
           }}
 
           .poster::after {{
@@ -549,12 +555,32 @@ async def list_files(request):
                   const card = document.createElement("div");
                   card.className = "card fade-in";
                   card.onclick = () => window.open(f.url, "_blank");
+                  
+                  const poster = document.createElement("div");
+                  poster.className = "poster";
+                  poster.style.setProperty('--poster-url', `url('${{f.poster}}')`);
+                  
+                  // Test if image loads successfully
+                  const img = new Image();
+                  img.onload = () => {{
+                    poster.classList.add('loaded');
+                  }};
+                  img.onerror = () => {{
+                    // Fallback to gradient background if image fails
+                    console.warn('Failed to load poster image:', f.poster);
+                    poster.style.backgroundImage = 'linear-gradient(135deg, #e50914 0%, #b0060f 100%)';
+                    // Add a video icon as fallback
+                    poster.innerHTML = '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; color: rgba(255,255,255,0.7);"><i class="fas fa-video"></i></div>';
+                  }};
+                  img.src = f.poster;
+                  
+                  const playOverlay = document.createElement("div");
+                  playOverlay.className = "play-overlay";
+                  playOverlay.innerHTML = '<i class="fas fa-play"></i>';
+                  
+                  poster.appendChild(playOverlay);
+                  
                   card.innerHTML = `
-                    <div class="poster" style="background-image: url('${{f.poster}}')">
-                      <div class="play-overlay">
-                        <i class="fas fa-play"></i>
-                      </div>
-                    </div>
                     <div class="info">
                       <h3>${{f.title}}</h3>
                       <div class="meta">
@@ -563,6 +589,8 @@ async def list_files(request):
                       </div>
                     </div>
                   `;
+                  
+                  card.insertBefore(poster, card.firstChild);
                   grid.appendChild(card);
                   
                   // Trigger animation
@@ -624,8 +652,6 @@ async def list_files(request):
     """
 
     return web.Response(text=html, content_type="text/html")
-
-
 
 
 @routes.get("/poster/{file_id}")
