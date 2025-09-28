@@ -52,28 +52,29 @@ async def root_route_handler(request):
     """
     return web.Response(text=html, content_type="text/html")
 
+
 @routes.get("/")
 async def list_files(request):
     """Return an HTML page showing all file links from MongoDB in responsive card layout."""
-    
+
     # Fetch all file documents
     docs = await db.get_all_file_ids()
     docs = list(reversed(docs))
-    
-    # Prepare card data with file link and poster URL
+
+    # Fixed poster image for all cards
+    fixed_poster_url = URL  # <-- yahan apna ek hi poster image daale
+
+    # Prepare card data with file link
     files_data = []
-    poster_base_url = f"{URL}/poster/"
-    
     for i, doc in enumerate(docs):
-        if "file_id" in doc and "poster_id" in doc:
+        if "file_id" in doc:
             file_link = f"https://t.me/NewRan_bot?start={doc['file_id']}"
-            poster_url = f"{poster_base_url}{doc['poster_id']}"
             files_data.append({
                 "title": f"⭕<b>{i+1}</b>: New Video",
                 "url": file_link,
-                "poster": poster_url
+                "poster": fixed_poster_url
             })
-    
+
     # Convert to JS array string
     cards_js_array = "[" + ",".join([f'{{"title":"{f["title"]}","url":"{f["url"]}","poster":"{f["poster"]}"}}' for f in files_data]) + "]"
 
@@ -193,6 +194,9 @@ async def list_files(request):
     """
 
     return web.Response(text=html, content_type="text/html")
+
+
+
 @routes.get("/poster/{file_id}")
 async def get_poster(request: web.Request):
     file_id = request.match_info["file_id"]
