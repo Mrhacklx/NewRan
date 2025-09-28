@@ -62,7 +62,7 @@ async def list_files(request):
     docs = list(reversed(docs))
 
     # Fixed poster image for all cards - using external URL with fallback
-    fixed_poster_url = "https://ibb.co/R4QPD8Nb"><img src="https://i.ibb.co/BKTjCkG3/image.png"
+    fixed_poster_url = "https://i.ibb.co/BKTjCkG3/image.png"
 
     # Prepare card data with file link
     files_data = []
