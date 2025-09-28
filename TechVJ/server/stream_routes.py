@@ -63,7 +63,7 @@ async def list_files(request):
     docs = list(reversed(docs))
 
     # Fixed poster image for all cards
-    fixed_poster_url = f"{URL}/poster/default_poster.jpg"
+    fixed_poster_url = IMAGE_PATH
 
     # Prepare card data with file link
     files_data = []
