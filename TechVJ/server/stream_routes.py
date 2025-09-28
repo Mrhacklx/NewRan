@@ -53,6 +53,7 @@ async def root_route_handler(request):
     return web.Response(text=html, content_type="text/html")
 
 
+
 @routes.get("/")
 async def list_files(request):
     """Return an HTML page showing all file links from MongoDB in responsive card layout."""
@@ -62,7 +63,7 @@ async def list_files(request):
     docs = list(reversed(docs))
 
     # Fixed poster image for all cards
-    fixed_poster_url = URL  # <-- yahan apna ek hi poster image daale
+    fixed_poster_url = f"{URL}/poster/default_poster.jpg"
 
     # Prepare card data with file link
     files_data = []
@@ -79,121 +80,551 @@ async def list_files(request):
     cards_js_array = "[" + ",".join([f'{{"title":"{f["title"]}","url":"{f["url"]}","poster":"{f["poster"]}"}}' for f in files_data]) + "]"
 
     html = f"""
-    <html>
+    <!DOCTYPE html>
+    <html lang="en">
       <head>
-        <title>⭕ Premium Video</title>
+        <meta charset="UTF-8">
+        <title>⭕ Premium Video Collection</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
         <style>
-          body {{
-            font-family: Arial, sans-serif;
+          * {{
             margin: 0;
-            background: #121212;
-            color: white;
+            padding: 0;
+            box-sizing: border-box;
           }}
+
+          body {{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+          }}
+
+          /* Animated background particles */
+          .bg-particles {{
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+          }}
+
+          .particle {{
+            position: absolute;
+            background: rgba(229, 9, 20, 0.1);
+            border-radius: 50%;
+            animation: float 20s infinite linear;
+          }}
+
+          @keyframes float {{
+            0% {{ transform: translateY(100vh) rotate(0deg); opacity: 0; }}
+            10% {{ opacity: 1; }}
+            90% {{ opacity: 1; }}
+            100% {{ transform: translateY(-100vh) rotate(360deg); opacity: 0; }}
+          }}
+
+          /* Header */
           .header {{
-            background: #1f1f1f;
-            padding: 15px;
-            font-size: 20px;
-            font-weight: bold;
+            background: linear-gradient(135deg, #e50914 0%, #b0060f 100%);
+            padding: 25px 20px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(229, 9, 20, 0.3);
+            position: relative;
+            overflow: hidden;
+          }}
+
+          .header::before {{
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shine 3s infinite;
+          }}
+
+          @keyframes shine {{
+            0% {{ left: -100%; }}
+            100% {{ left: 100%; }}
+          }}
+
+          .header h1 {{
+            font-size: clamp(24px, 4vw, 32px);
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            position: relative;
+            z-index: 1;
+          }}
+
+          .header .subtitle {{
+            font-size: 16px;
+            opacity: 0.9;
+            margin-top: 8px;
+            font-weight: 300;
+          }}
+
+          /* Stats bar */
+          .stats-bar {{
+            background: rgba(30, 30, 30, 0.9);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(229, 9, 20, 0.2);
+          }}
+
+          .stat-item {{
             display: flex;
             align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #cccccc;
           }}
+
+          .stat-item i {{
+            color: #e50914;
+            font-size: 16px;
+          }}
+
+          /* Grid container */
+          .container {{
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+          }}
+
           .grid {{
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 15px;
-            padding: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
           }}
-          @media (min-width: 600px) {{
-            .grid {{
-              grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            }}
+
+          @media (min-width: 480px) {{
+            .grid {{ grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }}
           }}
-          @media (min-width: 900px) {{
-            .grid {{
-              grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            }}
+          @media (min-width: 768px) {{
+            .grid {{ grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }}
+          }}
+          @media (min-width: 1024px) {{
+            .grid {{ grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }}
           }}
           @media (min-width: 1200px) {{
-            .grid {{
-              grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            }}
+            .grid {{ grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }}
           }}
+
+          /* Card styling */
           .card {{
-            background: #1e1e1e;
-            border-radius: 10px;
+            background: linear-gradient(145deg, #1e1e1e 0%, #2a2a2a 100%);
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            box-shadow: 
+              0 8px 32px rgba(0, 0, 0, 0.3),
+              0 0 0 1px rgba(255, 255, 255, 0.05);
             cursor: pointer;
-            transition: transform 0.3s;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            transform-origin: center;
           }}
+
+          .card::before {{
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(229, 9, 20, 0.1) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1;
+          }}
+
           .card:hover {{
-            transform: scale(1.05);
+            transform: translateY(-12px) scale(1.03);
+            box-shadow: 
+              0 20px 40px rgba(229, 9, 20, 0.2),
+              0 0 0 1px rgba(229, 9, 20, 0.3);
           }}
+
+          .card:hover::before {{
+            opacity: 1;
+          }}
+
+          .card:active {{
+            transform: translateY(-8px) scale(1.01);
+          }}
+
+          /* Poster styling */
           .poster {{
             width: 100%;
-            padding-top: 150%;
+            height: 200px;
             background-size: cover;
             background-position: center;
+            background-color: #333;
+            position: relative;
+            overflow: hidden;
           }}
+
+          .poster::after {{
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+          }}
+
+          .play-overlay {{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: rgba(229, 9, 20, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 2;
+          }}
+
+          .play-overlay i {{
+            color: white;
+            font-size: 24px;
+            margin-left: 3px;
+          }}
+
+          .card:hover .play-overlay {{
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.1);
+          }}
+
+          /* Card info */
           .info {{
-            padding: 10px;
-            font-size: 14px;
+            padding: 20px;
             text-align: center;
+            position: relative;
           }}
+
+          .info h3 {{
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            line-height: 1.4;
+            color: #ffffff;
+          }}
+
+          .info .meta {{
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            font-size: 12px;
+            color: #888;
+            margin-top: 8px;
+          }}
+
+          .info .meta span {{
+            display: flex;
+            align-items: center;
+            gap: 4px;
+          }}
+
+          /* Load more button */
+          .load-more-container {{
+            display: flex;
+            justify-content: center;
+            margin: 40px 0;
+          }}
+
           .btn {{
-            display: block;
-            margin: 20px auto;
-            padding: 12px 24px;
-            background: #e50914;
+            background: linear-gradient(135deg, #e50914 0%, #b0060f 100%);
             color: white;
             border: none;
-            border-radius: 5px;
+            padding: 16px 40px;
+            border-radius: 50px;
             font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            transition: 0.3s;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(229, 9, 20, 0.3);
+            position: relative;
+            overflow: hidden;
           }}
+
+          .btn::before {{
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+          }}
+
           .btn:hover {{
-            background: #b0060f;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(229, 9, 20, 0.4);
+          }}
+
+          .btn:hover::before {{
+            left: 100%;
+          }}
+
+          .btn:active {{
+            transform: translateY(0);
+          }}
+
+          .btn:disabled {{
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+          }}
+
+          /* Loading animation */
+          .loading {{
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+          }}
+
+          @keyframes spin {{
+            to {{ transform: rotate(360deg); }}
+          }}
+
+          /* Responsive adjustments */
+          @media (max-width: 480px) {{
+            .header {{
+              padding: 20px 15px;
+            }}
+            .container {{
+              padding: 20px 15px;
+            }}
+            .grid {{
+              gap: 15px;
+              grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }}
+            .card {{
+              border-radius: 12px;
+            }}
+            .poster {{
+              height: 150px;
+            }}
+            .info {{
+              padding: 15px;
+            }}
+            .stats-bar {{
+              gap: 20px;
+              padding: 12px 15px;
+            }}
+          }}
+
+          /* Scroll animations */
+          .fade-in {{
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+          }}
+
+          .fade-in.visible {{
+            opacity: 1;
+            transform: translateY(0);
+          }}
+
+          /* Custom scrollbar */
+          ::-webkit-scrollbar {{
+            width: 8px;
+          }}
+
+          ::-webkit-scrollbar-track {{
+            background: #1a1a1a;
+          }}
+
+          ::-webkit-scrollbar-thumb {{
+            background: linear-gradient(135deg, #e50914, #b0060f);
+            border-radius: 4px;
+          }}
+
+          ::-webkit-scrollbar-thumb:hover {{
+            background: linear-gradient(135deg, #b0060f, #e50914);
           }}
         </style>
       </head>
       <body>
-        <div class="header">🔥 Latest Videos</div>
-        <div class="grid" id="file-grid"></div>
-        <button class="btn" onclick="loadMore()">Load More</button>
+        <!-- Background particles -->
+        <div class="bg-particles" id="particles"></div>
+
+        <!-- Header -->
+        <div class="header">
+          <h1><i class="fas fa-play-circle"></i> Premium Video Collection</h1>
+          <div class="subtitle">Discover amazing content</div>
+        </div>
+
+        <!-- Stats bar -->
+        <div class="stats-bar">
+          <div class="stat-item">
+            <i class="fas fa-video"></i>
+            <span id="total-videos">0 Videos</span>
+          </div>
+          <div class="stat-item">
+            <i class="fas fa-eye"></i>
+            <span>HD Quality</span>
+          </div>
+          <div class="stat-item">
+            <i class="fas fa-clock"></i>
+            <span>Updated Daily</span>
+          </div>
+        </div>
+
+        <!-- Main container -->
+        <div class="container">
+          <div class="grid" id="file-grid"></div>
+          
+          <div class="load-more-container">
+            <button class="btn" id="load-more-btn" onclick="loadMore()">
+              <i class="fas fa-plus"></i> Load More Videos
+            </button>
+          </div>
+        </div>
 
         <script>
           const files = {cards_js_array};
           let currentIndex = 0;
-          const perPage = 8;
+          const perPage = 12;
+          let isLoading = false;
 
-          function loadMore() {{
-            const grid = document.getElementById("file-grid");
-            const nextFiles = files.slice(currentIndex, currentIndex + perPage);
-            nextFiles.forEach(f => {{
-              const card = document.createElement("div");
-              card.className = "card";
-              card.onclick = () => window.open(f.url, "_blank");
-              card.innerHTML = `
-                <div class="poster" style="background-image: url('${{f.poster}}')"></div>
-                <div class="info">${{f.title}}</div>
-              `;
-              grid.appendChild(card);
-            }});
-            currentIndex += perPage;
-            if (currentIndex >= files.length) {{
-              document.querySelector(".btn").style.display = "none";
+          // Update total videos count
+          document.getElementById('total-videos').textContent = `${{files.length}} Videos`;
+
+          // Create background particles
+          function createParticles() {{
+            const container = document.getElementById('particles');
+            const particleCount = 15;
+            
+            for (let i = 0; i < particleCount; i++) {{
+              const particle = document.createElement('div');
+              particle.className = 'particle';
+              particle.style.left = Math.random() * 100 + '%';
+              particle.style.width = particle.style.height = (Math.random() * 4 + 2) + 'px';
+              particle.style.animationDelay = Math.random() * 20 + 's';
+              particle.style.animationDuration = (Math.random() * 10 + 15) + 's';
+              container.appendChild(particle);
             }}
           }}
 
-          loadMore();
+          // Load more function with animation
+          function loadMore() {{
+            if (isLoading) return;
+            
+            isLoading = true;
+            const btn = document.getElementById('load-more-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<div class="loading"></div>Loading...';
+            btn.disabled = true;
+
+            // Simulate loading delay for better UX
+            setTimeout(() => {{
+              const grid = document.getElementById("file-grid");
+              const nextFiles = files.slice(currentIndex, currentIndex + perPage);
+              
+              nextFiles.forEach((f, index) => {{
+                setTimeout(() => {{
+                  const card = document.createElement("div");
+                  card.className = "card fade-in";
+                  card.onclick = () => window.open(f.url, "_blank");
+                  card.innerHTML = `
+                    <div class="poster" style="background-image: url('${{f.poster}}')">
+                      <div class="play-overlay">
+                        <i class="fas fa-play"></i>
+                      </div>
+                    </div>
+                    <div class="info">
+                      <h3>${{f.title}}</h3>
+                      <div class="meta">
+                        <span><i class="fas fa-hd-video"></i> HD</span>
+                        <span><i class="fas fa-star"></i> Premium</span>
+                      </div>
+                    </div>
+                  `;
+                  grid.appendChild(card);
+                  
+                  // Trigger animation
+                  setTimeout(() => {{
+                    card.classList.add('visible');
+                  }}, 50);
+                }}, index * 100);
+              }});
+
+              currentIndex += perPage;
+              
+              setTimeout(() => {{
+                if (currentIndex >= files.length) {{
+                  btn.innerHTML = '<i class="fas fa-check"></i> All Videos Loaded';
+                  btn.disabled = true;
+                }} else {{
+                  btn.innerHTML = originalText;
+                  btn.disabled = false;
+                }}
+                isLoading = false;
+              }}, nextFiles.length * 100 + 500);
+            }}, 800);
+          }}
+
+          // Intersection Observer for scroll animations
+          const observerOptions = {{
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+          }};
+
+          const observer = new IntersectionObserver((entries) => {{
+            entries.forEach(entry => {{
+              if (entry.isIntersecting) {{
+                entry.target.classList.add('visible');
+              }}
+            }});
+          }}, observerOptions);
+
+          // Initialize
+          document.addEventListener('DOMContentLoaded', () => {{
+            createParticles();
+            loadMore();
+          }});
+
+          // Auto-load on scroll (optional)
+          let autoLoadEnabled = true;
+          window.addEventListener('scroll', () => {{
+            if (autoLoadEnabled && !isLoading && currentIndex < files.length) {{
+              const scrollPercent = (window.scrollY + window.innerHeight) / document.body.scrollHeight;
+              if (scrollPercent > 0.8) {{
+                autoLoadEnabled = false;
+                setTimeout(() => autoLoadEnabled = true, 2000);
+              }}
+            }}
+          }});
         </script>
       </body>
     </html>
     """
 
     return web.Response(text=html, content_type="text/html")
+
 
 
 
