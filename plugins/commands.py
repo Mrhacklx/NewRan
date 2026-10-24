@@ -57,7 +57,7 @@ async def start(client, message):
         await db.add_user_link(message.from_user.id)
     if len(message.command) != 2:
         buttons = [
-            [InlineKeyboardButton('Join Main Channel', url='https://t.me/+Fscb9QfnyXZkNzRl')]
+            [InlineKeyboardButton('Join Main Channel', url='https://t.me/+s7Yvm4ROk402MjJl')]
             ]
         if CLONE_MODE == True:
             buttons.append([InlineKeyboardButton('🤖 ᴄʀᴇᴀᴛᴇ ʏᴏᴜʀ ᴏᴡɴ ᴄʟᴏɴᴇ ʙᴏᴛ', callback_data='clone')])
@@ -352,7 +352,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
     
     elif query.data == "start":
         buttons = [
-            [InlineKeyboardButton('Join Main Channel', url='https://t.me/+UPPu45NVQqpjMzI1')]
+            [InlineKeyboardButton('Join Main Channel', url='https://t.me/+s7Yvm4ROk402MjJl')]
             ]
         if CLONE_MODE == True:
             buttons.append([InlineKeyboardButton('🤖 ᴄʀᴇᴀᴛᴇ ʏᴏᴜʀ ᴏᴡɴ ᴄʟᴏɴᴇ ʙᴏᴛ', callback_data='clone')])
